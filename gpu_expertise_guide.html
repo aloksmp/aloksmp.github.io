@@ -1,0 +1,1744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPU Design — From Concept to Hardening</title>
+<style>
+:root {
+    --bg: #0f172a; --surface: #1e293b; --surface2: #334155;
+    --text: #e2e8f0; --text-dim: #94a3b8; --accent: #38bdf8;
+    --green: #22c55e; --yellow: #f59e0b; --orange: #f97316; --red: #ef4444;
+    --purple: #a78bfa;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+.container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+header { text-align: center; padding: 40px 0 20px; }
+header h1 { font-size: 2.2rem; background: linear-gradient(135deg, var(--accent), var(--green)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+header p { color: var(--text-dim); margin-top: 8px; }
+
+.toc { background: var(--surface); border-radius: 12px; padding: 24px 32px; margin: 30px 0; }
+.toc h2 { margin-bottom: 12px; color: var(--accent); }
+.toc ul { list-style: none; }
+.toc li { padding: 4px 0; }
+.toc li.sub { padding-left: 24px; font-size: 0.92rem; }
+.toc a { color: var(--accent); text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+.toc .module-num { display: inline-block; width: 32px; color: var(--green); font-weight: 700; }
+
+section { margin: 40px 0; }
+section > h2 { font-size: 1.6rem; color: var(--accent); border-bottom: 2px solid var(--surface2); padding-bottom: 8px; margin-bottom: 20px; }
+h3 { color: var(--green); margin: 20px 0 10px; font-size: 1.15rem; }
+h4 { color: var(--yellow); margin: 16px 0 8px; font-size: 1rem; }
+
+.card { background: var(--surface); border-radius: 12px; padding: 24px; margin-bottom: 24px; border: 1px solid var(--surface2); }
+.card:hover { border-color: var(--accent); }
+.card h3 { margin-top: 0; }
+
+.diagram { background: #0d1117; border: 1px solid var(--surface2); border-radius: 8px; padding: 16px; margin: 14px 0; font-family: 'Courier New', monospace; font-size: 0.85rem; color: var(--accent); white-space: pre; overflow-x: auto; line-height: 1.4; }
+
+table { width: 100%; border-collapse: collapse; margin: 14px 0; }
+th { background: var(--surface2); color: var(--accent); text-align: left; padding: 10px 14px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+td { padding: 10px 14px; border-bottom: 1px solid var(--surface2); font-size: 0.9rem; color: var(--text-dim); }
+tr:hover td { background: var(--surface); }
+
+ul, ol { padding-left: 22px; margin: 8px 0; }
+li { padding: 3px 0; font-size: 0.92rem; color: var(--text-dim); }
+
+.highlight { background: var(--surface2); border-left: 3px solid var(--accent); padding: 12px 16px; margin: 14px 0; border-radius: 0 8px 8px 0; font-size: 0.9rem; }
+.highlight strong { color: var(--accent); }
+
+.code-block { background: #0d1117; border: 1px solid var(--surface2); border-radius: 8px; padding: 14px 18px; margin: 12px 0; font-family: 'Courier New', monospace; font-size: 0.82rem; color: #c9d1d9; overflow-x: auto; white-space: pre; line-height: 1.5; }
+.keyword { color: #ff7b72; }
+.comment { color: #8b949e; }
+.string { color: #a5d6ff; }
+.type { color: #79c0ff; }
+.signal { color: #7ee787; }
+
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-right: 6px; }
+.badge-green { background: #16a34a33; color: var(--green); }
+.badge-yellow { background: #ca8a0433; color: var(--yellow); }
+.badge-red { background: #dc262633; color: var(--red); }
+.badge-purple { background: #7c3aed33; color: var(--purple); }
+
+.back-top { text-align: center; margin: 16px 0; }
+.back-top a { color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+.back-top a:hover { text-decoration: underline; }
+
+.interview-q { background: var(--surface); border-left: 3px solid var(--yellow); padding: 12px 16px; margin: 10px 0; border-radius: 0 8px 8px 0; }
+.interview-q .q { color: var(--yellow); font-weight: 600; font-size: 0.9rem; }
+.interview-q .a { color: var(--text-dim); font-size: 0.88rem; margin-top: 6px; }
+
+footer { text-align: center; padding: 40px 0 20px; color: var(--text-dim); font-size: 0.8rem; }
+
+@media (max-width: 600px) {
+    .diagram { font-size: 0.7rem; }
+    header h1 { font-size: 1.6rem; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+    <h1>Basics of GPU — From Concept to Handoff to Hardening</h1>
+    <p>A Comprehensive Guide to GPU Architecture, RTL Design, Verification &amp; Physical Implementation</p>
+</header>
+
+<!-- ========== TABLE OF CONTENTS ========== -->
+<nav class="toc" id="toc">
+<h2>Table of Contents</h2>
+<ul>
+    <li><span class="module-num">1.</span> <a href="#mod1">GPU Architecture Fundamentals</a></li>
+    <li class="sub"><a href="#mod1-pipeline">Graphics Pipeline</a> · <a href="#mod1-compute">Compute Architecture</a> · <a href="#mod1-memory">Memory Hierarchy</a></li>
+
+    <li><span class="module-num">2.</span> <a href="#mod2">GPU Microarchitecture Deep Dive</a></li>
+    <li class="sub"><a href="#mod2-sm">Streaming Multiprocessor</a> · <a href="#mod2-warp">Warp Scheduling</a> · <a href="#mod2-reg">Register File</a></li>
+
+    <li><span class="module-num">3.</span> <a href="#mod3">RTL Design for GPU IPs</a></li>
+    <li class="sub"><a href="#mod3-rtl">RTL Coding</a> · <a href="#mod3-fsm">FSM Design</a> · <a href="#mod3-pipe">Pipeline Design</a></li>
+
+    <li><span class="module-num">4.</span> <a href="#mod4">Power, Performance, Area (PPA) Optimization</a></li>
+    <li class="sub"><a href="#mod4-power">Power</a> · <a href="#mod4-perf">Performance</a> · <a href="#mod4-area">Area</a> · <a href="#mod4-timing">Timing Closure</a></li>
+
+    <li><span class="module-num">5.</span> <a href="#mod5">Verification & Debug</a></li>
+    <li class="sub"><a href="#mod5-uvm">UVM for GPU</a> · <a href="#mod5-formal">Formal Verification</a> · <a href="#mod5-debug">Debug Techniques</a></li>
+
+    <li><span class="module-num">6.</span> <a href="#mod6">TCL Scripting for Design Automation</a></li>
+    <li class="sub"><a href="#mod6-synth">Synthesis</a> · <a href="#mod6-pnr">Place & Route</a> · <a href="#mod6-lint">Lint & CDC</a></li>
+
+    <li><span class="module-num">7.</span> <a href="#mod7">SoC Integration of GPU IP</a></li>
+    <li class="sub"><a href="#mod7-bus">Bus Protocols</a> · <a href="#mod7-clock">Clock & Power Domains</a> · <a href="#mod7-customer">Customer Collaboration</a></li>
+
+    <li><span class="module-num">8.</span> <a href="#mod8">Modern GPU Trends</a></li>
+    <li class="sub"><a href="#mod8-chiplet">Chiplets & NoC</a> · <a href="#mod8-ai">AI/ML Acceleration</a> · <a href="#mod8-raytracing">Ray Tracing</a></li>
+
+    <li><span class="module-num">9.</span> <a href="#mod9">Multiply-Accumulate (MAC) — In Depth</a></li>
+    <li class="sub"><a href="#mod9-mac-basics">MAC Fundamentals</a> · <a href="#mod9-mac-arch">Where MAC Lives in GPU</a> · <a href="#mod9-mac-rtl">MAC RTL Design</a> · <a href="#mod9-mac-precision">Precision Formats</a></li>
+
+    <li><span class="module-num">10.</span> <a href="#mod10">GPU Deployment for Model Training</a></li>
+    <li class="sub"><a href="#mod10-hw">Hardware Stack</a> · <a href="#mod10-sw">Software Stack</a> · <a href="#mod10-topology">Multi-GPU Topology</a> · <a href="#mod10-workflow">Training Workflow</a></li>
+
+    <li><span class="module-num">11.</span> <a href="#mod11">Key Concepts & Q&A</a></li>
+    <li class="sub"><a href="#mod11-questions">Fundamental Questions</a> · <a href="#mod11-whiteboard">Design Exercises</a></li>
+
+    <li><span class="module-num">12.</span> <a href="#mod12">Study Resources & Roadmap</a></li>
+</ul>
+</nav>
+
+<!-- ========== MODULE 1: GPU Architecture Fundamentals ========== -->
+<section id="mod1">
+<h2>1. GPU Architecture Fundamentals</h2>
+
+<div class="card" id="mod1-pipeline">
+<h3>1.1 The Graphics Pipeline</h3>
+<p>Unlike CPUs (optimized for single-thread latency), GPUs are optimized for <strong>throughput</strong> — processing thousands of threads simultaneously. The classic graphics pipeline:</p>
+
+<div class="diagram">
+  Application (CPU)
+       │
+       ▼
+  ┌─────────────────────────────────────────────────────┐
+  │                   GRAPHICS PIPELINE                  │
+  │                                                      │
+  │  ┌──────────┐   ┌──────────┐   ┌───────────────┐   │
+  │  │  Vertex  │──▶│Primitive │──▶│ Rasterization │   │
+  │  │  Shader  │   │ Assembly │   │               │   │
+  │  └──────────┘   └──────────┘   └───────┬───────┘   │
+  │                                        │            │
+  │  ┌──────────┐   ┌──────────┐   ┌──────▼────────┐   │
+  │  │  Frame   │◀──│  Blend / │◀──│   Fragment    │   │
+  │  │  Buffer  │   │  ROP     │   │   Shader      │   │
+  │  └──────────┘   └──────────┘   └───────────────┘   │
+  │                                                      │
+  └─────────────────────────────────────────────────────┘
+       │
+       ▼
+    Display</div>
+
+<table>
+<tr><th>Stage</th><th>What it Does</th><th>RTL Design Relevance</th></tr>
+<tr><td><strong>Vertex Shader</strong></td><td>Transforms 3D vertex positions, applies lighting per vertex</td><td>Programmable execution units, ALU design</td></tr>
+<tr><td><strong>Primitive Assembly</strong></td><td>Groups vertices into triangles</td><td>Fixed-function logic, FIFO management</td></tr>
+<tr><td><strong>Rasterization</strong></td><td>Converts triangles to pixel fragments</td><td>Edge equations, interpolation hardware</td></tr>
+<tr><td><strong>Fragment Shader</strong></td><td>Computes per-pixel color, textures, effects</td><td>Texture units, ALU arrays, shared memory</td></tr>
+<tr><td><strong>ROP (Render Output)</strong></td><td>Depth test, blending, anti-aliasing</td><td>Fixed-function, memory bandwidth critical</td></tr>
+</table>
+
+<div class="highlight">
+<strong>Key Insight for SoC Engineers:</strong> The vertex and fragment shaders run on the same <strong>unified shader cores</strong> in modern GPUs. The fixed-function stages (rasterizer, ROP) are separate hardware blocks. As a GPU RTL designer, you may work on either type.
+</div>
+</div>
+
+<div class="card" id="mod1-compute">
+<h3>1.2 Compute Architecture — SIMT Model</h3>
+<p>Modern GPUs use <strong>SIMT (Single Instruction, Multiple Threads)</strong> — a key concept to master:</p>
+
+<div class="diagram">
+               SIMT Execution Model
+  ┌─────────────────────────────────────────┐
+  │           Warp (32 threads)             │
+  │  ┌────┬────┬────┬────┬─────┬────┐      │
+  │  │ T0 │ T1 │ T2 │ T3 │ ... │T31 │      │
+  │  └──┬─┴──┬─┴──┬─┴──┬─┴─────┴──┬─┘      │
+  │     │    │    │    │           │         │
+  │     ▼    ▼    ▼    ▼           ▼         │
+  │  ┌─────────────────────────────────┐    │
+  │  │   Same Instruction (ADD R1,R2)  │    │
+  │  │   Different Data per Thread     │    │
+  │  └─────────────────────────────────┘    │
+  └─────────────────────────────────────────┘
+
+  Common terminology:
+    Warp      — 32 threads  (most common)
+    Wavefront — 64 threads  (alternative)
+    EU Thread — 8-16 threads (varies by vendor)</div>
+
+<table>
+<tr><th>Concept</th><th>Description</th><th>Why it Matters for RTL</th></tr>
+<tr><td><strong>Thread</strong></td><td>Single execution instance</td><td>Each thread has its own register state</td></tr>
+<tr><td><strong>Warp/Wavefront</strong></td><td>Group of threads executing same instruction</td><td>Warp scheduler is a critical RTL block</td></tr>
+<tr><td><strong>Thread Block</strong></td><td>Group of warps sharing resources</td><td>Shared memory, barrier synchronization HW</td></tr>
+<tr><td><strong>Grid</strong></td><td>All thread blocks for a kernel</td><td>Dispatch unit, work distribution</td></tr>
+<tr><td><strong>Divergence</strong></td><td>Threads in a warp take different paths (if/else)</td><td>Predication masks, re-convergence logic</td></tr>
+</table>
+
+<div class="highlight">
+<strong>Critical RTL Design Point:</strong> When threads in a warp diverge (if/else), the GPU must execute <strong>both paths</strong> and mask inactive threads. This is handled by predication hardware — a key area for GPU RTL designers.
+</div>
+</div>
+
+<div class="card" id="mod1-memory">
+<h3>1.3 GPU Memory Hierarchy</h3>
+
+<div class="diagram">
+  ┌─────────────────────────────────────────────────┐
+  │                 GPU Memory Hierarchy              │
+  │                                                   │
+  │  Fastest    ┌──────────────────┐                  │
+  │  ◄────────  │  Register File   │  per thread      │
+  │             │  (256 KB per SM) │                   │
+  │             └────────┬─────────┘                  │
+  │                      │                             │
+  │             ┌────────▼─────────┐                  │
+  │             │  Shared Memory   │  per thread block │
+  │             │  (64-228 KB/SM)  │  (software managed│
+  │             └────────┬─────────┘   scratchpad)     │
+  │                      │                             │
+  │             ┌────────▼─────────┐                  │
+  │             │    L1 Cache      │  per SM           │
+  │             │  (128-256 KB)    │                   │
+  │             └────────┬─────────┘                  │
+  │                      │                             │
+  │             ┌────────▼─────────┐                  │
+  │             │    L2 Cache      │  shared across GPU│
+  │             │  (4-96 MB)       │                   │
+  │             └────────┬─────────┘                  │
+  │                      │                             │
+  │  Slowest    ┌────────▼─────────┐                  │
+  │  ◄────────  │  GDDR6X / HBM   │  off-chip DRAM   │
+  │             │  (8-80 GB)       │  (high bandwidth) │
+  │             └──────────────────┘                  │
+  └─────────────────────────────────────────────────┘</div>
+
+<table>
+<tr><th>Memory Type</th><th>Latency (cycles)</th><th>Bandwidth</th><th>RTL Design Considerations</th></tr>
+<tr><td>Register File</td><td>0-1</td><td>Highest</td><td>Multi-ported SRAM, bank conflicts, allocation logic</td></tr>
+<tr><td>Shared Memory</td><td>~20-30</td><td>Very High</td><td>Bank design (32 banks), conflict resolution, barrier sync</td></tr>
+<tr><td>L1 Cache</td><td>~30-50</td><td>High</td><td>Tag arrays, replacement policy, coherence with shared mem</td></tr>
+<tr><td>L2 Cache</td><td>~200-400</td><td>Medium</td><td>Slice architecture, NoC interface, coherence protocol</td></tr>
+<tr><td>GDDR6X/HBM</td><td>~400-800</td><td>Up to 3+ TB/s (HBM3)</td><td>Memory controller, scheduling, refresh, ECC</td></tr>
+</table>
+
+<div class="highlight">
+<strong>SoC Engineer Crossover:</strong> GPU memory hierarchy is similar to CPU caches you already know, but with key differences: (1) Register files are massively larger (to hold thousands of thread contexts), (2) Shared memory is explicitly managed by software, (3) Bandwidth is prioritized over latency.
+</div>
+</div>
+
+<p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+</section>
+
+<!-- ========== MODULE 2: GPU Microarchitecture ========== -->
+<section id="mod2">
+<h2>2. GPU Microarchitecture Deep Dive</h2>
+
+<div class="card" id="mod2-sm">
+<h3>2.1 Streaming Multiprocessor (SM) Architecture</h3>
+<p>The Streaming Multiprocessor (SM) / Compute Unit (CU) / Execution Unit (EU) is the fundamental building block:</p>
+
+<div class="diagram">
+  ┌─────────────────────────────────────────────────────────┐
+  │              Streaming Multiprocessor (SM)                │
+  │                                                          │
+  │  ┌──────────────────────────────────────────────┐       │
+  │  │            Warp Scheduler (x4)                │       │
+  │  │  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ │       │
+  │  │  │ Sched0 │ │ Sched1 │ │ Sched2 │ │ Sched3 │ │       │
+  │  │  └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘ │       │
+  │  └──────┼──────────┼──────────┼──────────┼──────┘       │
+  │         ▼          ▼          ▼          ▼               │
+  │  ┌─────────────────────────────────────────────┐        │
+  │  │          Execution Units                     │        │
+  │  │  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐       │        │
+  │  │  │INT32 │ │INT32 │ │FP32  │ │FP32  │       │        │
+  │  │  │ALU   │ │ALU   │ │ALU   │ │ALU   │       │        │
+  │  │  └──────┘ └──────┘ └──────┘ └──────┘       │        │
+  │  │  ┌──────┐ ┌──────┐ ┌──────┐                 │        │
+  │  │  │FP64  │ │Tensor│ │ SFU  │  (Special Func) │        │
+  │  │  │ALU   │ │Core  │ │sin/cos│                 │        │
+  │  │  └──────┘ └──────┘ └──────┘                 │        │
+  │  └─────────────────────────────────────────────┘        │
+  │                                                          │
+  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+  │  │ Register File │  │Shared Memory │  │  L1 Cache    │  │
+  │  │  (256 KB)     │  │  (100 KB)    │  │  (128 KB)    │  │
+  │  └──────────────┘  └──────────────┘  └──────────────┘  │
+  │                                                          │
+  │  ┌─────────────────────────────────────────────┐        │
+  │  │  Load/Store Units    │   Texture Units      │        │
+  │  │  (memory requests)   │   (filtering, LOD)   │        │
+  │  └─────────────────────────────────────────────┘        │
+  └─────────────────────────────────────────────────────────┘</div>
+
+<table>
+<tr><th>Sub-block</th><th>Function</th><th>RTL Complexity</th></tr>
+<tr><td><strong>Warp Scheduler</strong></td><td>Picks ready warps, issues instructions each cycle</td><td><span class="badge badge-red">Very High</span> — scoreboarding, dependency tracking</td></tr>
+<tr><td><strong>INT32/FP32 ALUs</strong></td><td>Core arithmetic — add, mul, fma, bitwise</td><td><span class="badge badge-yellow">Medium</span> — pipelined datapaths</td></tr>
+<tr><td><strong>Tensor Cores</strong></td><td>Matrix multiply-accumulate (AI/ML workloads)</td><td><span class="badge badge-red">Very High</span> — systolic arrays, mixed precision</td></tr>
+<tr><td><strong>SFU</strong></td><td>Transcendental functions — sin, cos, rsqrt</td><td><span class="badge badge-yellow">Medium</span> — iterative approximation</td></tr>
+<tr><td><strong>Register File</strong></td><td>Thread context storage</td><td><span class="badge badge-red">Very High</span> — multi-banked, conflict-free access</td></tr>
+<tr><td><strong>Load/Store Units</strong></td><td>Memory access — coalescing, address generation</td><td><span class="badge badge-red">Very High</span> — coalescing logic, TLB</td></tr>
+<tr><td><strong>Texture Units</strong></td><td>Texture sampling, bilinear/trilinear filtering</td><td><span class="badge badge-yellow">Medium</span> — interpolation math, LOD calc</td></tr>
+</table>
+</div>
+
+<div class="card" id="mod2-warp">
+<h3>2.2 Warp Scheduling — The Heart of GPU Performance</h3>
+
+<p>The warp scheduler is one of the most critical RTL blocks in a GPU. It must:</p>
+<ul>
+    <li>Track dependency status of all active warps (scoreboard)</li>
+    <li>Select ready warps each cycle (priority/round-robin/age-based)</li>
+    <li>Handle divergence and re-convergence</li>
+    <li>Manage stalls (memory latency, execution hazards)</li>
+</ul>
+
+<div class="diagram">
+  Warp Scheduling — Latency Hiding
+  ═══════════════════════════════════
+
+  Cycle:  1   2   3   4   5   6   7   8   9  10  11  12
+  ────────────────────────────────────────────────────────
+  Warp 0: EXE EXE MEM --- --- --- --- --- --- MEM_DONE
+  Warp 1: --- EXE EXE EXE MEM --- --- --- ---
+  Warp 2: --- --- EXE EXE EXE EXE MEM --- ---
+  Warp 3: --- --- --- EXE EXE EXE EXE EXE MEM
+  ────────────────────────────────────────────────────────
+                    ▲
+        While Warp 0 waits for memory,
+        the scheduler runs Warps 1, 2, 3.
+        This is GPU LATENCY HIDING.</div>
+
+<div class="highlight">
+<strong>Key Design Decision:</strong> The scheduler's policy (Greedy-Then-Oldest, Loose Round Robin, Two-Level) directly impacts performance by 15-30%. This is a critical area where micro-architecture innovation happens.
+</div>
+</div>
+
+<div class="card" id="mod2-reg">
+<h3>2.3 Register File Design</h3>
+
+<p>GPU register files are unlike anything in CPU design:</p>
+
+<table>
+<tr><th>Parameter</th><th>CPU</th><th>GPU</th></tr>
+<tr><td>Size per core</td><td>~5-10 KB</td><td>~256 KB per SM</td></tr>
+<tr><td>Ports</td><td>~10-20 read/write</td><td>Banked (32+ banks) to simulate many ports</td></tr>
+<tr><td>Allocation</td><td>Rename/OoO</td><td>Static at kernel launch</td></tr>
+<tr><td>Purpose</td><td>Speculative execution</td><td>Hold thousands of thread contexts</td></tr>
+</table>
+
+<div class="highlight">
+<strong>RTL Challenge:</strong> Designing a 256 KB register file with conflict-free access across 32 banks, serving 4 warp schedulers issuing to multiple execution units — while meeting timing at 1.5+ GHz — is one of the hardest GPU RTL design problems.
+</div>
+</div>
+
+<p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+</section>
+
+<!-- ========== MODULE 3: RTL Design for GPU IPs ========== -->
+<section id="mod3">
+<h2>3. RTL Design for GPU IPs</h2>
+
+<div class="card" id="mod3-rtl">
+<h3>3.1 RTL Coding Style for GPU Blocks</h3>
+
+<p>GPU RTL coding follows strict guidelines for synthesis and timing closure at advanced nodes:</p>
+
+<div class="code-block"><span class="comment">// Example: Simple pipelined FP32 FMA unit (Fused Multiply-Add)</span>
+<span class="comment">// Key GPU operation: result = A * B + C</span>
+
+<span class="keyword">module</span> <span class="type">fp32_fma_pipe</span> (
+    <span class="keyword">input</span>  <span class="keyword">logic</span>        clk,
+    <span class="keyword">input</span>  <span class="keyword">logic</span>        rst_n,
+    <span class="keyword">input</span>  <span class="keyword">logic</span>        valid_in,
+    <span class="keyword">input</span>  <span class="keyword">logic</span> [31:0] operand_a,
+    <span class="keyword">input</span>  <span class="keyword">logic</span> [31:0] operand_b,
+    <span class="keyword">input</span>  <span class="keyword">logic</span> [31:0] operand_c,
+    <span class="keyword">output</span> <span class="keyword">logic</span>        valid_out,
+    <span class="keyword">output</span> <span class="keyword">logic</span> [31:0] result
+);
+
+    <span class="comment">// Pipeline stage 1: Multiply</span>
+    <span class="keyword">logic</span> [47:0] <span class="signal">mul_result_s1</span>;
+    <span class="keyword">logic</span> [31:0] <span class="signal">operand_c_s1</span>;
+    <span class="keyword">logic</span>        <span class="signal">valid_s1</span>;
+
+    <span class="keyword">always_ff</span> @(<span class="keyword">posedge</span> clk <span class="keyword">or negedge</span> rst_n) <span class="keyword">begin</span>
+        <span class="keyword">if</span> (!rst_n) <span class="keyword">begin</span>
+            <span class="signal">valid_s1</span> &lt;= 1'b0;
+        <span class="keyword">end else begin</span>
+            <span class="signal">valid_s1</span>      &lt;= valid_in;
+            <span class="signal">mul_result_s1</span> &lt;= operand_a[22:0] * operand_b[22:0];
+            <span class="signal">operand_c_s1</span>  &lt;= operand_c;
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+
+    <span class="comment">// Pipeline stage 2: Accumulate + Normalize</span>
+    <span class="keyword">always_ff</span> @(<span class="keyword">posedge</span> clk <span class="keyword">or negedge</span> rst_n) <span class="keyword">begin</span>
+        <span class="keyword">if</span> (!rst_n) <span class="keyword">begin</span>
+            valid_out &lt;= 1'b0;
+        <span class="keyword">end else begin</span>
+            valid_out &lt;= <span class="signal">valid_s1</span>;
+            result    &lt;= normalize(add(<span class="signal">mul_result_s1</span>, <span class="signal">operand_c_s1</span>));
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+
+<span class="keyword">endmodule</span></div>
+
+<h4>GPU RTL Coding Guidelines:</h4>
+<ul>
+    <li><strong>Always use <code>always_ff</code></strong> for sequential logic — synthesizers optimize better</li>
+    <li><strong>Pipeline aggressively</strong> — GPU targets high clock frequencies (1.5-2.5 GHz)</li>
+    <li><strong>Avoid latches</strong> — use explicit flops for every storage element</li>
+    <li><strong>Minimize combinational depth</strong> — target &lt;15 logic levels per stage</li>
+    <li><strong>Clock gating everywhere</strong> — GPUs burn 300-700W, power is critical</li>
+    <li><strong>Parameterize designs</strong> — GPU blocks are instantiated many times</li>
+</ul>
+</div>
+
+<div class="card" id="mod3-fsm">
+<h3>3.2 FSM Design for GPU Controllers</h3>
+
+<p>GPU control logic frequently uses FSMs. Example — a simplified warp dispatch controller:</p>
+
+<div class="diagram">
+                Warp Dispatch FSM
+    ┌───────┐                    ┌──────────┐
+    │       │  ready warps &gt; 0   │          │
+    │ IDLE  ├───────────────────▶│ DECODE   │
+    │       │                    │          │
+    └───┬───┘                    └────┬─────┘
+        ▲                             │
+        │   all warps complete        │ decoded
+        │                             ▼
+    ┌───┴───────┐               ┌──────────┐
+    │           │◀──────────────│          │
+    │ COMPLETE  │  result ready │ EXECUTE  │
+    │           │               │          │
+    └───────────┘               └────┬─────┘
+                                     │
+                                     │ memory request
+                                     ▼
+                                ┌──────────┐
+                                │ MEM_WAIT │
+                                │          │
+                                └──────────┘</div>
+
+<div class="highlight">
+<strong>RTL Best Practice:</strong> Use <strong>one-hot encoding</strong> for GPU FSMs at advanced nodes — it's faster (single bit check) and easier for synthesis tools to optimize, even though it uses more flops.
+</div>
+</div>
+
+<div class="card" id="mod3-pipe">
+<h3>3.3 Pipeline Design Patterns</h3>
+
+<table>
+<tr><th>Pattern</th><th>Use Case in GPU</th><th>Key Design Consideration</th></tr>
+<tr><td><strong>Linear Pipeline</strong></td><td>ALU execution stages</td><td>Balanced stage delays, forwarding paths</td></tr>
+<tr><td><strong>Elastic Pipeline</strong></td><td>Memory subsystem</td><td>Valid/ready handshake, backpressure</td></tr>
+<tr><td><strong>Skid Buffer</strong></td><td>Interface between blocks</td><td>Absorbs 1-cycle stalls without losing throughput</td></tr>
+<tr><td><strong>Credit-based Flow</strong></td><td>NoC, L2 cache interface</td><td>Prevents overflow, decouples producer/consumer</td></tr>
+<tr><td><strong>FIFO Queues</strong></td><td>Instruction buffer, memory queues</td><td>Async FIFOs for clock domain crossing</td></tr>
+</table>
+</div>
+
+<p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+</section>
+
+<!-- ========== MODULE 4: PPA Optimization ========== -->
+<section id="mod4">
+<h2>4. Power, Performance, Area (PPA) Optimization</h2>
+
+<div class="card" id="mod4-power">
+<h3>4.1 Power Optimization Techniques</h3>
+
+<table>
+<tr><th>Technique</th><th>Savings</th><th>Where Used in GPU</th></tr>
+<tr><td><strong>Clock Gating</strong></td><td>20-40%</td><td>Idle execution units, unused warps, inactive SMs</td></tr>
+<tr><td><strong>Power Gating</strong></td><td>Up to 90% (leakage)</td><td>Entire SMs powered off when unused</td></tr>
+<tr><td><strong>DVFS</strong></td><td>Variable</td><td>Dynamic voltage/frequency based on workload</td></tr>
+<tr><td><strong>Operand Isolation</strong></td><td>5-10%</td><td>Gate inputs to multipliers when not valid</td></tr>
+<tr><td><strong>Memory Banking</strong></td><td>10-20%</td><td>Only activate needed SRAM banks</td></tr>
+<tr><td><strong>Data Encoding</strong></td><td>5-15%</td><td>Bus invert coding on wide data buses</td></tr>
+</table>
+
+<div class="code-block"><span class="comment">// Clock gating example for GPU ALU</span>
+<span class="keyword">logic</span> <span class="signal">alu_clk_en</span>;
+<span class="keyword">logic</span> <span class="signal">alu_gated_clk</span>;
+
+<span class="keyword">assign</span> <span class="signal">alu_clk_en</span> = valid_in | flush | stall_recovery;
+
+<span class="comment">// Use ICG cell (Integrated Clock Gate) — synthesis replaces this</span>
+<span class="type">clk_gate_cell</span> u_alu_cg (
+    .clk_in  (clk),
+    .enable  (<span class="signal">alu_clk_en</span>),
+    .clk_out (<span class="signal">alu_gated_clk</span>)
+);</div>
+</div>
+
+<div class="card" id="mod4-perf">
+<h3>4.2 Performance Optimization</h3>
+
+<ul>
+    <li><strong>Pipeline balancing</strong> — ensure each stage has similar combinational delay</li>
+    <li><strong>Reduce stall cycles</strong> — forwarding/bypassing between dependent instructions</li>
+    <li><strong>Memory coalescing</strong> — merge multiple thread memory accesses into one transaction</li>
+    <li><strong>Occupancy optimization</strong> — maximize active warps per SM to hide latency</li>
+    <li><strong>Instruction-Level Parallelism</strong> — dual-issue or quad-issue capabilities</li>
+</ul>
+
+<div class="highlight">
+<strong>Performance Metric:</strong> GPU performance is measured in <strong>FLOPS</strong> (Floating Point Operations Per Second). A modern GPU achieves 40-80 TFLOPS FP32. RTL designers must ensure the datapath can sustain peak throughput without pipeline bubbles.
+</div>
+</div>
+
+<div class="card" id="mod4-area">
+<h3>4.3 Area Optimization</h3>
+
+<ul>
+    <li><strong>Resource sharing</strong> — time-multiplex ALUs between warps</li>
+    <li><strong>SRAM compilers</strong> — use foundry-optimized SRAM macros vs flip-flop arrays</li>
+    <li><strong>Logic restructuring</strong> — share common sub-expressions across datapaths</li>
+    <li><strong>Encoding efficiency</strong> — use compressed formats (FP16, BF16, INT8 for AI)</li>
+</ul>
+</div>
+
+<div class="card" id="mod4-timing">
+<h3>4.4 Timing Closure at Advanced Nodes</h3>
+
+<table>
+<tr><th>Node</th><th>Target Freq</th><th>Key Challenges</th></tr>
+<tr><td>7nm</td><td>1.5-1.8 GHz</td><td>Wire delay dominates, multi-Vt optimization</td></tr>
+<tr><td>5nm</td><td>1.8-2.2 GHz</td><td>FinFET variability, increased leakage</td></tr>
+<tr><td>4nm/3nm</td><td>2.0-2.5 GHz</td><td>GAA transistors, extreme BEOL congestion</td></tr>
+</table>
+
+<div class="highlight">
+<strong>RTL for Timing:</strong> At 3nm, you must think about timing <strong>while writing RTL</strong>. Techniques: limit fan-out to &lt;8, break long combinational chains, use retiming-friendly coding, insert pipeline stages at module boundaries.
+</div>
+</div>
+
+<p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+</section>
+
+<!-- ========== MODULE 5: Verification & Debug ========== -->
+<section id="mod5">
+<h2>5. Verification & Debug</h2>
+
+<div class="card" id="mod5-uvm">
+<h3>5.1 UVM Verification for GPU Blocks</h3>
+
+<p>GPU verification shares UVM methodology with SoC, but with GPU-specific challenges:</p>
+
+<div class="diagram">
+  GPU Verification Hierarchy
+  ══════════════════════════
+
+  ┌──────────────────────────────────────────┐
+  │         Full Chip / SoC Level            │  System tests, boot, OS
+  ├──────────────────────────────────────────┤
+  │       GPU Cluster Level                  │  Multi-SM tests, L2, NoC
+  ├──────────────────────────────────────────┤
+  │       SM / Compute Unit Level            │  Shader programs, scheduling
+  ├──────────────────────────────────────────┤
+  │       Sub-block Level                    │  ALU, register file, cache
+  ├──────────────────────────────────────────┤
+  │       Unit Level                         │  Individual pipeline stages
+  └──────────────────────────────────────────┘</div>
+
+<table>
+<tr><th>GPU Verification Challenge</th><th>Approach</th></tr>
+<tr><td>Massive parallelism (thousands of threads)</td><td>Constrained random with thread-aware coverage</td></tr>
+<tr><td>Warp divergence/convergence</td><td>Directed tests + coverage on divergence patterns</td></tr>
+<tr><td>Floating-point precision</td><td>Reference model comparison with tolerance</td></tr>
+<tr><td>Memory consistency</td><td>Litmus tests, memory ordering checkers</td></tr>
+<tr><td>Performance (cycle accuracy)</td><td>Performance counters in RTL, throughput assertions</td></tr>
+</table>
+</div>
+
+<div class="card" id="mod5-formal">
+<h3>5.2 Formal Equivalence Verification (FEV)</h3>
+
+<p>FEV ensures RTL changes don't break functionality — critical in GPU design where frequent optimizations happen:</p>
+
+<table>
+<tr><th>Tool</th><th>Vendor</th><th>Use Case</th></tr>
+<tr><td><strong>Formality</strong></td><td>EDA Tool</td><td>RTL-to-gate equivalence after synthesis</td></tr>
+<tr><td><strong>Conformal LEC</strong></td><td>EDA Tool</td><td>Logic equivalence checking</td></tr>
+<tr><td><strong>JasperGold</strong></td><td>EDA Tool</td><td>Property checking, formal proofs</td></tr>
+<tr><td><strong>VC Formal</strong></td><td>EDA Tool</td><td>Assertion-based formal verification</td></tr>
+</table>
+
+<div class="code-block"><span class="comment">// SVA Assertion example for GPU pipeline</span>
+<span class="comment">// Ensure every valid instruction produces a result within N cycles</span>
+
+<span class="keyword">property</span> <span class="type">instr_completes</span>;
+    @(<span class="keyword">posedge</span> clk) <span class="keyword">disable iff</span> (!rst_n)
+    (valid_in && !stall) |-> ##[1:MAX_LATENCY] valid_out;
+<span class="keyword">endproperty</span>
+
+<span class="keyword">assert property</span> (<span class="type">instr_completes</span>)
+    <span class="keyword">else</span> $error(<span class="string">"Instruction did not complete within %0d cycles"</span>, MAX_LATENCY);</div>
+</div>
+
+<div class="card" id="mod5-debug">
+<h3>5.3 GPU-Specific Debug Techniques</h3>
+
+<ul>
+    <li><strong>Waveform analysis</strong> — trace warp scheduler decisions, identify stall causes</li>
+    <li><strong>Performance counters</strong> — embed HW counters for IPC, cache hit rate, occupancy</li>
+    <li><strong>Shader ISA simulation</strong> — run actual shader programs on RTL, compare with golden model</li>
+    <li><strong>Memory trace analysis</strong> — verify coalescing, bank conflict detection</li>
+    <li><strong>Power estimation</strong> — use switching activity from simulation for power analysis</li>
+    <li><strong>Protocol checkers</strong> — AXI/ACE/CHI protocol monitors on interfaces</li>
+</ul>
+</div>
+
+<p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+</section>
+
+<!-- ========== MODULE 6: TCL Scripting ========== -->
+<section id="mod6">
+<h2>6. TCL Scripting for Design Automation</h2>
+
+<div class="card" id="mod6-synth">
+<h3>6.1 Synthesis Automation</h3>
+
+<div class="code-block"><span class="comment"># TCL script for synthesis — GPU block</span>
+
+<span class="comment"># Read design files</span>
+<span class="keyword">set</span> search_path [list ./rtl ./lib ./constraints]
+<span class="keyword">set</span> target_library {foundry_3nm_ss_0p72v_125c.db}
+<span class="keyword">set</span> link_library  {* $target_library}
+
+<span class="comment"># Analyze and elaborate</span>
+analyze -format sverilog [glob ./rtl/*.sv]
+elaborate gpu_sm_top
+
+<span class="comment"># Apply constraints</span>
+<span class="keyword">source</span> ./constraints/gpu_sm.sdc
+set_clock_uncertainty 0.05 [get_clocks gpu_clk]
+set_max_fanout 8 [current_design]
+
+<span class="comment"># Clock gating insertion</span>
+set_clock_gating_style -type integrated \
+    -minimum_bitwidth 4 \
+    -control_point before
+
+<span class="comment"># Compile with high effort</span>
+compile_ultra -gate_clock -timing_high_effort_script
+
+<span class="comment"># Reports</span>
+report_timing -max_paths 50 > rpt/timing.rpt
+report_area -hierarchy       > rpt/area.rpt
+report_power -analysis_effort high > rpt/power.rpt
+report_clock_gating          > rpt/cg.rpt
+
+<span class="comment"># Write outputs</span>
+write -format verilog -hierarchy -output netlist/gpu_sm_top.v
+write_sdc netlist/gpu_sm_top.sdc</div>
+</div>
+
+<div class="card" id="mod6-pnr">
+<h3>6.2 Place & Route Automation</h3>
+
+<div class="code-block"><span class="comment"># TCL for Place & Route — GPU block</span>
+
+<span class="comment"># Initialize design</span>
+read_verilog netlist/gpu_sm_top.v
+read_sdc netlist/gpu_sm_top.sdc
+read_lef {tech.lef macro.lef}
+
+<span class="comment"># Floorplan</span>
+floorPlan -r 0.7 0.8 5 5 5 5
+<span class="comment"># Place SRAM macros (register file, caches)</span>
+placeInstance u_regfile_sram 100 200 R0
+placeInstance u_l1_cache     300 200 R0
+
+<span class="comment"># Power planning</span>
+addStripe -layer M8 -width 2 -spacing 2 -set_to_set_distance 40 \
+    -nets {VDD VSS}
+
+<span class="comment"># Placement and optimization</span>
+place_opt_design
+clock_opt_design
+route_opt_design
+
+<span class="comment"># Timing signoff</span>
+report_timing -max_paths 100 -early -late</div>
+</div>
+
+<div class="card" id="mod6-lint">
+<h3>6.3 Lint, CDC, and RDC</h3>
+
+<div class="code-block"><span class="comment"># Spyglass lint and CDC setup for GPU block</span>
+
+<span class="comment"># Lint run</span>
+set_option enableSV yes
+read_file -type sourcelist rtl_files.f
+current_goal lint/lint_rtl
+run_goal
+
+<span class="comment"># CDC (Clock Domain Crossing) analysis</span>
+<span class="comment"># Critical for GPU: core clock, memory clock, PCIe clock</span>
+current_goal cdc/cdc_verify
+set_parameter crossingcheck_strictsync yes
+run_goal
+
+<span class="comment"># Report CDC violations</span>
+report_crossings -format csv > cdc_crossings.csv</div>
+</div>
+
+<p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+</section>
+
+<!-- ========== MODULE 7: SoC Integration ========== -->
+<section id="mod7">
+<h2>7. SoC Integration of GPU IP</h2>
+
+<div class="card" id="mod7-bus">
+<h3>7.1 Bus Protocols for GPU-SoC Interface</h3>
+
+<div class="diagram">
+  GPU IP Integration in SoC
+  ═════════════════════════
+
+  ┌────────────┐     AXI/ACE      ┌──────────────┐
+  │            ├────────────────▶  │              │
+  │  CPU       │                   │  Interconnect │
+  │  Cluster   │◀────────────────  │  / NoC        │
+  │            │     Coherent      │              │
+  └────────────┘                   └──────┬───────┘
+                                          │
+                    ┌─────────────────────┼────────────────┐
+                    │                     │                 │
+              ┌─────▼─────┐        ┌─────▼─────┐   ┌─────▼─────┐
+              │   GPU     │        │  Memory   │   │  Display  │
+              │   IP      │        │  Ctrl     │   │  Engine   │
+              │           │        │  (DDR/HBM)│   │           │
+              │  AXI-M    │        │           │   │           │
+              │  AXI-S    │        └───────────┘   └───────────┘
+              │  IRQ      │
+              │  DMA      │
+              └───────────┘</div>
+
+<table>
+<tr><th>Protocol</th><th>Use in GPU Integration</th><th>Key Features</th></tr>
+<tr><td><strong>AXI4</strong></td><td>Non-coherent memory access</td><td>Burst, outstanding transactions, ID-based ordering</td></tr>
+<tr><td><strong>ACE/ACE-Lite</strong></td><td>Cache-coherent access with CPU</td><td>Snoop channels, shared/exclusive states</td></tr>
+<tr><td><strong>CHI</strong></td><td>Next-gen coherent interconnect</td><td>Packet-based, scalable, request/response/data/snoop</td></tr>
+<tr><td><strong>AXI-Stream</strong></td><td>Display pipeline, video output</td><td>Unidirectional, no address, continuous flow</td></tr>
+<tr><td><strong>APB</strong></td><td>GPU configuration registers</td><td>Simple, low-bandwidth control interface</td></tr>
+</table>
+
+<div class="highlight">
+<strong>SoC Crossover:</strong> Understanding AXI/ACE protocols, clock domain crossings at SoC level, and integration debugging is directly transferable to GPU integration work.
+</div>
+</div>
+
+<div class="card" id="mod7-clock">
+<h3>7.2 Clock & Power Domains in GPU SoCs</h3>
+
+<div class="diagram">
+  GPU SoC Clock & Power Architecture
+  ════════════════════════════════════
+
+  ┌─────────────────────────────────────────────┐
+  │                Power Domain: GPU_VDD         │
+  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
+  │  │   SM 0   │  │   SM 1   │  │   SM N   │  │
+  │  │ gpu_clk  │  │ gpu_clk  │  │ gpu_clk  │  │
+  │  │ (2 GHz)  │  │ (2 GHz)  │  │ (2 GHz)  │  │
+  │  └──────────┘  └──────────┘  └──────────┘  │
+  │           (individually power-gatable)       │
+  ├─────────────────────────────────────────────┤
+  │                Power Domain: MEM_VDD         │
+  │  ┌──────────┐  ┌──────────┐                 │
+  │  │ L2 Cache │  │ Mem Ctrl │                 │
+  │  │ mem_clk  │  │ mem_clk  │                 │
+  │  │ (1 GHz)  │  │ (1 GHz)  │                 │
+  │  └──────────┘  └──────────┘                 │
+  ├─────────────────────────────────────────────┤
+  │                Power Domain: IO_VDD          │
+  │  ┌──────────┐  ┌──────────┐                 │
+  │  │ PCIe     │  │ Display  │                 │
+  │  │ pcie_clk │  │ disp_clk │                 │
+  │  │ (250MHz) │  │ (pixel)  │                 │
+  │  └──────────┘  └──────────┘                 │
+  └─────────────────────────────────────────────┘
+
+  CDC crossings needed at every domain boundary!</div>
+</div>
+
+<div class="card" id="mod7-customer">
+<h3>7.3 Customer Collaboration — GPU as IP</h3>
+
+<p>When GPU is delivered as IP to SoC customers (your outsourcing experience is valuable here):</p>
+
+<table>
+<tr><th>Deliverable</th><th>Description</th></tr>
+<tr><td><strong>RTL Package</strong></td><td>Encrypted/obfuscated RTL, integration wrapper, config parameters</td></tr>
+<tr><td><strong>Integration Guide</strong></td><td>Clock/reset requirements, pin descriptions, connectivity rules</td></tr>
+<tr><td><strong>Verification IP</strong></td><td>UVM agents, reference tests, coverage models for customer verification</td></tr>
+<tr><td><strong>Timing Constraints</strong></td><td>SDC files, interface timing budgets, multicycle paths</td></tr>
+<tr><td><strong>Power Intent</strong></td><td>UPF/CPF files, isolation/retention requirements</td></tr>
+<tr><td><strong>Programming Guide</strong></td><td>Register map, driver interface, initialization sequence</td></tr>
+</table>
+
+<div class="highlight">
+<strong>Note:</strong> Experience packaging IP for external customers, writing SOWs, and managing outsourced deliverables is a valuable complement to GPU RTL design skills.
+</div>
+</div>
+
+<p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+</section>
+
+<!-- ========== MODULE 8: Modern GPU Trends ========== -->
+<section id="mod8">
+<h2>8. Modern GPU Trends (2024-2026)</h2>
+
+<div class="card" id="mod8-chiplet">
+<h3>8.1 Chiplet Architecture & NoC</h3>
+
+<div class="diagram">
+  Modern GPU Chiplet Architecture
+  ════════════════════════════════
+
+  ┌─────────────────────────────────────────────────┐
+  │                   Package (CoWoS)                │
+  │                                                  │
+  │  ┌──────────┐  ┌──────────┐  ┌──────────┐      │
+  │  │ Compute  │  │ Compute  │  │ Compute  │      │
+  │  │ Chiplet  │  │ Chiplet  │  │ Chiplet  │      │
+  │  │  (5nm)   │  │  (5nm)   │  │  (5nm)   │      │
+  │  │          │  │          │  │          │      │
+  │  │ 32 SMs   │  │ 32 SMs   │  │ 32 SMs   │      │
+  │  └────┬─────┘  └────┬─────┘  └────┬─────┘      │
+  │       │              │              │             │
+  │  ═════╧══════════════╧══════════════╧════════    │
+  │              Die-to-Die Interconnect              │
+  │  ════════════════════╤══════════════════════      │
+  │                      │                            │
+  │            ┌─────────▼──────────┐                │
+  │            │    IO / Cache Die   │                │
+  │            │       (6nm)         │                │
+  │            │                     │                │
+  │            │  L2 Cache + NoC     │                │
+  │            │  HBM Controllers    │                │
+  │            │  PCIe Gen5          │                │
+  │            └─────────────────────┘                │
+  │                                                   │
+  │  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐       │
+  │  │HBM3 │ │HBM3 │ │HBM3 │ │HBM3 │ │HBM3 │       │
+  │  │Stack│ │Stack│ │Stack│ │Stack│ │Stack│       │
+  │  └─────┘ └─────┘ └─────┘ └─────┘ └─────┘       │
+  │                                                   │
+  └─────────────────────────────────────────────────┘</div>
+
+<div class="highlight">
+<strong>NoC Relevance:</strong> Chiplet GPUs need sophisticated NoC designs for die-to-die communication, cache coherence across chiplets, and bandwidth management — a direct application of Network-on-Chip expertise.
+</div>
+</div>
+
+<div class="card" id="mod8-ai">
+<h3>8.2 AI/ML Acceleration — Tensor Cores</h3>
+
+<table>
+<tr><th>Generation</th><th>Operations</th><th>Precision</th><th>TOPS</th></tr>
+<tr><td>Tensor Core v1 (1st Gen)</td><td>4x4 matrix FMA</td><td>FP16</td><td>~125</td></tr>
+<tr><td>Tensor Core v2 (2nd Gen)</td><td>Sparse + dense</td><td>TF32, BF16, INT8</td><td>~312</td></tr>
+<tr><td>Tensor Core v3 (3rd Gen)</td><td>Transformer Engine</td><td>FP8, FP16, BF16</td><td>~1000</td></tr>
+<tr><td>Tensor Core v4 (4th Gen)</td><td>2nd gen Transformer</td><td>FP4, FP8, FP16</td><td>~2500</td></tr>
+</table>
+
+<div class="diagram">
+  Tensor Core Operation (Simplified)
+  ════════════════════════════════════
+
+  Matrix A (4x4)  ×  Matrix B (4x4)  +  Matrix C (4x4)  =  Matrix D (4x4)
+
+  ┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐
+  │ a b c d │     │ e f g h │     │ . . . . │     │ . . . . │
+  │ a b c d │  ×  │ e f g h │  +  │ . . . . │  =  │ . . . . │
+  │ a b c d │     │ e f g h │     │ . . . . │     │ . . . . │
+  │ a b c d │     │ e f g h │     │ . . . . │     │ . . . . │
+  └─────────┘     └─────────┘     └─────────┘     └─────────┘
+    FP16/BF16       FP16/BF16       FP32             FP32
+
+  Done in ONE cycle per Tensor Core!
+  → This is how GPUs achieve massive AI throughput</div>
+
+<div class="highlight">
+<strong>RTL Design Impact:</strong> Tensor cores are essentially systolic arrays — a grid of multiply-accumulate units with data flowing through them. Designing these requires understanding of dataflow architecture, mixed-precision arithmetic, and efficient SRAM access patterns.
+</div>
+</div>
+
+<div class="card" id="mod8-raytracing">
+<h3>8.3 Ray Tracing Hardware</h3>
+
+<p>Modern GPUs include dedicated RT (Ray Tracing) cores:</p>
+
+<table>
+<tr><th>Component</th><th>Function</th><th>RTL Design</th></tr>
+<tr><td><strong>BVH Traversal Unit</strong></td><td>Traverse acceleration structure (tree)</td><td>Tree walker FSM, stack management</td></tr>
+<tr><td><strong>Ray-Box Intersection</strong></td><td>Test ray against bounding boxes</td><td>FP comparators, slab method</td></tr>
+<tr><td><strong>Ray-Triangle Intersection</strong></td><td>Test ray against triangle geometry</td><td>Möller-Trumbore algorithm in hardware</td></tr>
+</table>
+</div>
+
+<p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+</section>
+
+<!-- ========== MODULE 9: MAC Deep Dive ========== -->
+<section id="mod9">
+<h2>9. Multiply-Accumulate (MAC) — In Depth</h2>
+
+<div class="card" id="mod9-mac-basics">
+<h3>9.1 MAC Fundamentals</h3>
+
+<p>The Multiply-Accumulate (MAC) operation is the single most important arithmetic operation in GPU computing. Every pixel rendered, every neural network inference, and every physics simulation ultimately reduces to MAC operations: <strong>D = A × B + C</strong></p>
+
+<div class="diagram">
+  MAC Operation — Hardware View
+  ══════════════════════════════
+
+      A ──────┐
+              ├──▶ ┌────────────┐        ┌────────────┐
+      B ──────┘    │  Multiplier │──────▶ │   Adder    │──────▶ D (Result)
+                   │  (A × B)    │        │ (Prod + C) │
+      C ──────────────────────────────────▶│            │
+                   └────────────┘        └────────────┘
+
+  Single MAC:  1 multiply + 1 add = 2 FLOPs
+
+  FMA (Fused Multiply-Add):
+  ┌──────────────────────────────────────────────────┐
+  │  Multiplier and Adder share a SINGLE rounding    │
+  │  step → more accurate + saves 1 cycle            │
+  │  IEEE 754-2008 mandates FMA as a single op       │
+  └──────────────────────────────────────────────────┘</div>
+
+<h4>MAC vs FMA — Critical Distinction:</h4>
+<table>
+<tr><th>Operation</th><th>Formula</th><th>Rounding</th><th>Accuracy</th><th>Hardware Cost</th></tr>
+<tr><td><strong>MAC</strong> (unfused)</td><td>D = round(round(A×B) + C)</td><td>Two rounding steps</td><td>Lower — error accumulates</td><td>Separate multiplier + adder</td></tr>
+<tr><td><strong>FMA</strong> (fused)</td><td>D = round(A×B + C)</td><td>One rounding step</td><td>Higher — single rounding</td><td>Fused unit, wider internal datapath</td></tr>
+</table>
+
+<div class="highlight">
+<strong>Why FMA Matters:</strong> In deep learning, millions of MAC operations chain together. With unfused MAC, rounding errors accumulate across layers and degrade model accuracy. FMA's single rounding preserves precision. Modern GPUs exclusively use FMA units.
+</div>
+</div>
+
+<div class="card" id="mod9-mac-arch">
+<h3>9.2 Where MAC Lives in GPU Architecture</h3>
+
+<p>MAC/FMA units are embedded at every level of the GPU compute hierarchy:</p>
+
+<div class="diagram">
+  MAC Usage Across GPU Architecture
+  ═══════════════════════════════════
+
+  ┌─────────────────────────────────────────────────────────┐
+  │                  Streaming Multiprocessor                │
+  │                                                          │
+  │  ┌─────────────────────────────────────────────┐        │
+  │  │          Shader / CUDA Cores                 │        │
+  │  │  ┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐   │        │
+  │  │  │FP32   │ │FP32   │ │FP32   │ │FP32   │   │        │
+  │  │  │FMA    │ │FMA    │ │FMA    │ │FMA    │   │        │
+  │  │  │Unit   │ │Unit   │ │Unit   │ │Unit   │   │        │
+  │  │  └───────┘ └───────┘ └───────┘ └───────┘   │        │
+  │  │  × 32 per SM  = 32 FMAs per cycle           │        │
+  │  │  Each processes 1 thread of a warp           │        │
+  │  └─────────────────────────────────────────────┘        │
+  │                                                          │
+  │  ┌─────────────────────────────────────────────┐        │
+  │  │          Tensor Cores (AI/ML)                │        │
+  │  │  ┌───────────────────────────────────┐      │        │
+  │  │  │    4×4 Systolic Array of MACs     │      │        │
+  │  │  │                                    │      │        │
+  │  │  │  MAC MAC MAC MAC                   │      │        │
+  │  │  │  MAC MAC MAC MAC                   │      │        │
+  │  │  │  MAC MAC MAC MAC                   │      │        │
+  │  │  │  MAC MAC MAC MAC                   │      │        │
+  │  │  │                                    │      │        │
+  │  │  │  = 64 MACs per cycle per Tensor    │      │        │
+  │  │  │    Core (4×4 × 4 depth)            │      │        │
+  │  │  └───────────────────────────────────┘      │        │
+  │  │  × 4 Tensor Cores per SM                     │        │
+  │  └─────────────────────────────────────────────┘        │
+  │                                                          │
+  │  ┌─────────────────────────────────────────────┐        │
+  │  │       Texture Units (Graphics)               │        │
+  │  │  Bilinear filtering = 4 MACs per texel       │        │
+  │  │  Trilinear = 8 MACs per texel                │        │
+  │  └─────────────────────────────────────────────┘        │
+  │                                                          │
+  │  ┌─────────────────────────────────────────────┐        │
+  │  │       Ray Tracing Cores                      │        │
+  │  │  Ray-triangle intersection = 18+ MACs        │        │
+  │  │  per ray-triangle test                       │        │
+  │  └─────────────────────────────────────────────┘        │
+  └─────────────────────────────────────────────────────────┘</div>
+
+<table>
+<tr><th>GPU Block</th><th>MAC Type</th><th>Precision</th><th>MACs per Cycle (per SM)</th><th>Use Case</th></tr>
+<tr><td><strong>Shader Cores</strong></td><td>Scalar FMA</td><td>FP32, FP16</td><td>32-128</td><td>General compute, shading</td></tr>
+<tr><td><strong>Tensor Cores</strong></td><td>Matrix FMA (systolic)</td><td>FP8, BF16, FP16, TF32, INT8</td><td>256-1024</td><td>AI training & inference</td></tr>
+<tr><td><strong>Texture Units</strong></td><td>Fixed-point MAC</td><td>FP16/fixed</td><td>16-32</td><td>Texture filtering</td></tr>
+<tr><td><strong>RT Cores</strong></td><td>FP MAC</td><td>FP32</td><td>Varies</td><td>Ray intersection math</td></tr>
+<tr><td><strong>SFU</strong></td><td>Iterative MAC</td><td>FP32</td><td>8</td><td>sin, cos, rsqrt via polynomial</td></tr>
+</table>
+
+<div class="highlight">
+<strong>Scale Perspective:</strong> A modern high-end GPU has ~128 SMs. Each SM has ~128 FP32 FMA units + 4 Tensor Cores. Total: ~16,384 scalar FMAs + ~512 Tensor Cores running in parallel = capable of ~80+ TFLOPS FP32 and ~2500+ TOPS INT8.
+</div>
+</div>
+
+<div class="card" id="mod9-mac-rtl">
+<h3>9.3 MAC/FMA RTL Design — Hardware Implementation</h3>
+
+<h4>9.3.1 FP32 FMA Microarchitecture</h4>
+
+<div class="diagram">
+  FP32 Fused Multiply-Add Pipeline (5-stage)
+  ═══════════════════════════════════════════
+
+  Stage 1: DECODE & UNPACK
+  ┌──────────────────────────────────────────────┐
+  │  Extract from IEEE 754:                       │
+  │  A = {sign_a, exp_a[7:0], mant_a[22:0]}     │
+  │  B = {sign_b, exp_b[7:0], mant_b[22:0]}     │
+  │  C = {sign_c, exp_c[7:0], mant_c[22:0]}     │
+  │  Add implicit leading 1: mant = {1, frac}    │
+  │  Handle special cases: NaN, Inf, Zero, Denorm│
+  └──────────────────────────────────────┬───────┘
+                                         │
+  Stage 2: MULTIPLY                      ▼
+  ┌──────────────────────────────────────────────┐
+  │  product_mant = mant_a × mant_b             │
+  │  (24-bit × 24-bit = 48-bit result)           │
+  │  product_exp  = exp_a + exp_b - 127 (bias)  │
+  │  product_sign = sign_a XOR sign_b            │
+  │                                               │
+  │  Hardware: Booth-encoded Wallace tree         │
+  │  multiplier for speed                         │
+  └──────────────────────────────────────┬───────┘
+                                         │
+  Stage 3: ALIGN                         ▼
+  ┌──────────────────────────────────────────────┐
+  │  exp_diff = product_exp - exp_c              │
+  │  Shift C's mantissa to align with product:   │
+  │  aligned_c = mant_c >> exp_diff              │
+  │                                               │
+  │  Key: Must use WIDE internal datapath         │
+  │  (74+ bits) to avoid precision loss           │
+  └──────────────────────────────────────┬───────┘
+                                         │
+  Stage 4: ADD / SUBTRACT                ▼
+  ┌──────────────────────────────────────────────┐
+  │  If same sign: sum = product + aligned_c     │
+  │  If diff sign: sum = product - aligned_c     │
+  │                                               │
+  │  Handle massive cancellation case:            │
+  │  when A×B ≈ -C, result can lose many bits    │
+  │  → need Leading Zero Anticipator (LZA)       │
+  └──────────────────────────────────────┬───────┘
+                                         │
+  Stage 5: NORMALIZE & ROUND             ▼
+  ┌──────────────────────────────────────────────┐
+  │  1. Count leading zeros (from LZA)           │
+  │  2. Left-shift to normalize: 1.xxxxx         │
+  │  3. Adjust exponent accordingly              │
+  │  4. Round to 23-bit mantissa (IEEE 754)      │
+  │     → Round-to-nearest-even (banker's)       │
+  │  5. Pack: {sign, exp[7:0], frac[22:0]}       │
+  │  6. Handle overflow → Inf, underflow → Zero  │
+  └──────────────────────────────────────────────┘</div>
+
+<h4>9.3.2 RTL Code — Simplified FMA Pipeline</h4>
+
+<div class="code-block"><span class="comment">// Simplified 3-stage FP32 FMA (conceptual — production uses 5+ stages)</span>
+
+<span class="keyword">module</span> <span class="type">fma_fp32</span> #(
+    <span class="keyword">parameter</span> MANT_W = 24,    <span class="comment">// 23 fraction + 1 implicit</span>
+    <span class="keyword">parameter</span> EXP_W  = 8,
+    <span class="keyword">parameter</span> PROD_W = 2*MANT_W  <span class="comment">// 48-bit product</span>
+)(
+    <span class="keyword">input</span>  <span class="keyword">logic</span>        clk, rst_n, valid_in,
+    <span class="keyword">input</span>  <span class="keyword">logic</span> [31:0] op_a, op_b, op_c,
+    <span class="keyword">output</span> <span class="keyword">logic</span>        valid_out,
+    <span class="keyword">output</span> <span class="keyword">logic</span> [31:0] result
+);
+
+    <span class="comment">// Stage 1: Multiply mantissas, compute exponent</span>
+    <span class="keyword">logic</span> [PROD_W-1:0] <span class="signal">product_s1</span>;
+    <span class="keyword">logic</span> [EXP_W:0]    <span class="signal">exp_prod_s1</span>;
+    <span class="keyword">logic</span>              <span class="signal">sign_prod_s1</span>;
+
+    <span class="keyword">always_ff</span> @(<span class="keyword">posedge</span> clk) <span class="keyword">begin</span>
+        <span class="signal">product_s1</span>   &lt;= {1'b1, op_a[22:0]} * {1'b1, op_b[22:0]};
+        <span class="signal">exp_prod_s1</span>  &lt;= op_a[30:23] + op_b[30:23] - 8'd127;
+        <span class="signal">sign_prod_s1</span> &lt;= op_a[31] ^ op_b[31];
+    <span class="keyword">end</span>
+
+    <span class="comment">// Stage 2: Align addend C, perform addition</span>
+    <span class="keyword">logic</span> [PROD_W+1:0] <span class="signal">sum_s2</span>;
+    <span class="keyword">logic</span> [EXP_W:0]    <span class="signal">exp_s2</span>;
+
+    <span class="keyword">always_ff</span> @(<span class="keyword">posedge</span> clk) <span class="keyword">begin</span>
+        <span class="comment">// Align and add (simplified — real design handles</span>
+        <span class="comment">// sign, shift amount, wide datapath)</span>
+        <span class="signal">sum_s2</span> &lt;= <span class="signal">product_s1</span> + align(<span class="signal">exp_prod_s1</span>, op_c);
+        <span class="signal">exp_s2</span> &lt;= <span class="signal">exp_prod_s1</span>;
+    <span class="keyword">end</span>
+
+    <span class="comment">// Stage 3: Normalize and round</span>
+    <span class="keyword">always_ff</span> @(<span class="keyword">posedge</span> clk) <span class="keyword">begin</span>
+        result    &lt;= normalize_and_round(<span class="signal">sum_s2</span>, <span class="signal">exp_s2</span>);
+        valid_out &lt;= valid_s2;
+    <span class="keyword">end</span>
+
+<span class="keyword">endmodule</span></div>
+
+<h4>9.3.3 Systolic Array — How Tensor Cores Use MACs</h4>
+
+<div class="diagram">
+  Systolic Array (4×4) — Data Flow for Matrix Multiply
+  ═════════════════════════════════════════════════════
+
+  B elements flow DOWN ↓         A elements flow RIGHT →
+         b0    b1    b2    b3
+         ↓     ↓     ↓     ↓
+  a0 → ┌─────┬─────┬─────┬─────┐
+        │ MAC │ MAC │ MAC │ MAC │ → partial sums
+        │d+=  │d+=  │d+=  │d+=  │
+  a1 → ├─────┼─────┼─────┼─────┤
+        │ MAC │ MAC │ MAC │ MAC │
+        │a×b+c│a×b+c│a×b+c│a×b+c│
+  a2 → ├─────┼─────┼─────┼─────┤
+        │ MAC │ MAC │ MAC │ MAC │
+        │     │     │     │     │
+  a3 → ├─────┼─────┼─────┼─────┤
+        │ MAC │ MAC │ MAC │ MAC │
+        │     │     │     │     │
+        └─────┴─────┴─────┴─────┘
+         ↓     ↓     ↓     ↓
+       Result matrix D accumulates over K cycles
+
+  Each cell:
+  ┌──────────────────────────┐
+  │  accum += a_in × b_in   │  ← one MAC per cycle
+  │  pass a_in → right       │
+  │  pass b_in → down        │
+  └──────────────────────────┘
+
+  4×4 array doing K=4 accumulation:
+  = 4 × 4 × 4 = 64 MACs in 4 cycles
+  = 16 MACs per cycle throughput</div>
+
+<div class="highlight">
+<strong>RTL Design Challenge:</strong> The systolic array requires precise data staging — A elements must arrive one cycle apart horizontally, B elements one cycle apart vertically. Skew registers at the array edges handle this timing. The accumulator inside each cell must handle mixed-precision (e.g., FP16 multiply → FP32 accumulate) without overflow.
+</div>
+
+<h4>9.3.4 MAC in the Multiplier — Booth Encoding</h4>
+
+<div class="diagram">
+  Booth-Encoded Wallace Tree Multiplier
+  (Used inside every MAC unit)
+  ══════════════════════════════════════
+
+  24-bit × 24-bit mantissa multiplication:
+
+  Radix-4 Booth Encoding:
+  ┌─────────────────────────────────────────┐
+  │  Reduces 24 partial products → 12       │
+  │  Each 2 bits of multiplier B encodes:   │
+  │                                          │
+  │  B[1:0]  Action       Partial Product   │
+  │  ─────── ──────────── ────────────────  │
+  │   00     +0           0                  │
+  │   01     +1×A         A                  │
+  │   10     -2×A         -(A << 1)          │
+  │   11     -1×A         -A                 │
+  └─────────────────────────────────────────┘
+
+  Wallace Tree Compression:
+  ┌─────────────────────────────────────────┐
+  │  12 partial products                     │
+  │    → Layer 1: 3:2 compressors → 8 rows  │
+  │    → Layer 2: 3:2 compressors → 6 rows  │
+  │    → Layer 3: 3:2 compressors → 4 rows  │
+  │    → Layer 4: 3:2 compressors → 3 rows  │
+  │    → Layer 5: 3:2 compressors → 2 rows  │
+  │    → Final: CPA (carry-propagate add)   │
+  │                                          │
+  │  Total delay: ~5 compressor levels       │
+  │  + 1 CPA = very fast parallel multiply  │
+  └─────────────────────────────────────────┘</div>
+</div>
+
+<div class="card" id="mod9-mac-precision">
+<h3>9.4 Precision Formats — Which MAC for Which Task</h3>
+
+<div class="diagram">
+  Number Formats Used in GPU MACs
+  ════════════════════════════════
+
+  FP32 (Single Precision):
+  ┌──┬──────────┬───────────────────────┐
+  │S │ Exponent │      Mantissa         │  32 bits total
+  │1 │  8 bits  │      23 bits          │  Range: ±3.4×10³⁸
+  └──┴──────────┴───────────────────────┘  Precision: ~7 decimal digits
+
+  FP16 (Half Precision):
+  ┌──┬───────┬──────────┐
+  │S │ Exp   │ Mantissa │  16 bits total
+  │1 │ 5 bit │ 10 bits  │  Range: ±65504
+  └──┴───────┴──────────┘  Precision: ~3 decimal digits
+
+  BF16 (Brain Float):
+  ┌──┬──────────┬───────┐
+  │S │ Exponent │ Mant  │  16 bits total
+  │1 │  8 bits  │ 7 bit │  Same range as FP32!
+  └──┴──────────┴───────┘  Precision: ~2 decimal digits
+
+  TF32 (Tensor Float):
+  ┌──┬──────────┬──────────┐
+  │S │ Exponent │ Mantissa │  19 bits (internal only)
+  │1 │  8 bits  │ 10 bits  │  Range of FP32, precision of FP16
+  └──┴──────────┴──────────┘  Used only inside Tensor Cores
+
+  FP8 (E4M3 / E5M2):
+  ┌──┬──────┬─────┐
+  │S │ Exp  │Mant │  8 bits total
+  │1 │ 4/5  │ 3/2 │  Very low precision, very fast
+  └──┴──────┴─────┘  Used for inference
+
+  INT8:
+  ┌────────────┐
+  │  8-bit int │  Range: -128 to +127
+  └────────────┘  No exponent — fixed point</div>
+
+<table>
+<tr><th>Format</th><th>Bits</th><th>MAC/cycle (per Tensor Core)</th><th>Use Case</th><th>Accuracy Trade-off</th></tr>
+<tr><td><strong>FP32</strong></td><td>32</td><td>16</td><td>Scientific computing, graphics shading</td><td>Highest — gold standard</td></tr>
+<tr><td><strong>TF32</strong></td><td>19</td><td>64</td><td>AI training (default)</td><td>Good — minimal loss vs FP32</td></tr>
+<tr><td><strong>BF16</strong></td><td>16</td><td>128</td><td>AI training (mixed precision)</td><td>Good — same range as FP32</td></tr>
+<tr><td><strong>FP16</strong></td><td>16</td><td>128</td><td>Inference, graphics</td><td>Moderate — limited range</td></tr>
+<tr><td><strong>FP8</strong></td><td>8</td><td>256</td><td>Inference, fast training</td><td>Low — needs careful scaling</td></tr>
+<tr><td><strong>INT8</strong></td><td>8</td><td>256</td><td>Inference deployment</td><td>Requires quantization-aware training</td></tr>
+<tr><td><strong>FP4</strong></td><td>4</td><td>512</td><td>Aggressive inference</td><td>Very low — experimental</td></tr>
+</table>
+
+<div class="highlight">
+<strong>RTL Impact:</strong> Each precision format requires a different multiplier width, accumulator width, and rounding logic. Supporting multiple formats in one MAC unit requires multiplexed datapaths or reconfigurable multiplier arrays. The trend is toward flexible MAC units that handle FP32/TF32/BF16/FP16/FP8/INT8 in the same hardware, selectable per instruction.
+</div>
+
+<h4>Mixed-Precision Training — How Formats Combine:</h4>
+
+<div class="diagram">
+  Mixed-Precision Training Flow
+  ══════════════════════════════
+
+  Forward Pass:
+  ┌──────────┐     ┌──────────────┐     ┌──────────┐
+  │ Weights  │     │  Tensor Core │     │ Activations│
+  │  FP16    │────▶│  FP16 × FP16 │────▶│  FP16     │
+  │          │     │  + FP32 accum │     │           │
+  └──────────┘     └──────────────┘     └──────────┘
+
+  Loss Calculation:                      FP32 (full precision)
+
+  Backward Pass:
+  ┌──────────┐     ┌──────────────┐     ┌──────────┐
+  │Gradients │     │  Tensor Core │     │ Weight   │
+  │  FP16    │────▶│  FP16 × FP16 │────▶│ Updates  │
+  │          │     │  + FP32 accum │     │  FP32    │
+  └──────────┘     └──────────────┘     └──────────┘
+                                         │
+                                         ▼
+                                   Master Weights
+                                   stored in FP32
+                                   (never lose precision)</div>
+</div>
+
+<p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+</section>
+
+<!-- ========== MODULE 10: GPU Deployment for Model Training ========== -->
+<section id="mod10">
+<h2>10. GPU Deployment for Model Training</h2>
+
+<div class="card" id="mod10-hw">
+<h3>10.1 Hardware Stack — What's Needed to Train a Model</h3>
+
+<div class="diagram">
+  Complete GPU Training Infrastructure
+  ═════════════════════════════════════
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │                     DATA CENTER RACK                         │
+  │                                                              │
+  │  ┌────────────────────────────────────────────────────────┐ │
+  │  │              GPU SERVER NODE (1 of many)                │ │
+  │  │                                                         │ │
+  │  │  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐          │ │
+  │  │  │ GPU 0  │ │ GPU 1  │ │ GPU 2  │ │ GPU 3  │          │ │
+  │  │  │ 80GB   │ │ 80GB   │ │ 80GB   │ │ 80GB   │          │ │
+  │  │  │ HBM3   │ │ HBM3   │ │ HBM3   │ │ HBM3   │          │ │
+  │  │  └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘          │ │
+  │  │      │          │          │          │                 │ │
+  │  │  ════╧══════════╧══════════╧══════════╧═════           │ │
+  │  │       NVLink / GPU-to-GPU Interconnect                  │ │
+  │  │       (900 GB/s bidirectional)                           │ │
+  │  │  ═══════════════════╤═══════════════════════            │ │
+  │  │                     │                                    │ │
+  │  │  ┌──────────────────▼──────────────────────┐            │ │
+  │  │  │              CPU (Host)                  │            │ │
+  │  │  │  2× Server CPU, 512GB-2TB DDR5 RAM      │            │ │
+  │  │  │  Orchestrates training, data loading     │            │ │
+  │  │  └──────────────────┬──────────────────────┘            │ │
+  │  │                     │ PCIe Gen5 ×16                      │ │
+  │  │  ┌──────────────────▼──────────────────────┐            │ │
+  │  │  │         Network Interface               │            │ │
+  │  │  │  InfiniBand 400 Gb/s (RDMA)             │            │ │
+  │  │  │  or RoCE (RDMA over Ethernet)           │            │ │
+  │  │  └──────────────────┬──────────────────────┘            │ │
+  │  │                     │                                    │ │
+  │  └─────────────────────┼──────────────────────────────────┘ │
+  │                        │                                     │
+  │  ══════════════════════╧══════════════════════════════════  │
+  │           High-Speed Network Fabric (Spine-Leaf)             │
+  │  ═══════╤══════════╤══════════╤══════════╤════════════════  │
+  │         │          │          │          │                    │
+  │    ┌────▼───┐ ┌────▼───┐ ┌────▼───┐ ┌────▼───┐             │
+  │    │Node 1  │ │Node 2  │ │Node 3  │ │Node N  │             │
+  │    │8 GPUs  │ │8 GPUs  │ │8 GPUs  │ │8 GPUs  │             │
+  │    └────────┘ └────────┘ └────────┘ └────────┘             │
+  │                                                              │
+  │  ┌────────────────────────────────────────────────────────┐ │
+  │  │           STORAGE SUBSYSTEM                             │ │
+  │  │  High-speed NVMe SSDs (local) + Parallel filesystem    │ │
+  │  │  (Lustre / GPFS / WekaFS) for shared training data     │ │
+  │  │  Capacity: 100s of TB to PBs                            │ │
+  │  └────────────────────────────────────────────────────────┘ │
+  │                                                              │
+  │  ┌────────────────────────────────────────────────────────┐ │
+  │  │           COOLING & POWER                               │ │
+  │  │  Liquid cooling (direct-to-chip) for GPU nodes          │ │
+  │  │  Power: 5-10 kW per GPU node                            │ │
+  │  │  Total cluster: 100 kW to 100+ MW                       │ │
+  │  └────────────────────────────────────────────────────────┘ │
+  └─────────────────────────────────────────────────────────────┘</div>
+
+<h4>Hardware Component Breakdown:</h4>
+
+<table>
+<tr><th>Component</th><th>Purpose</th><th>Specification (Typical)</th><th>Why It's Needed</th></tr>
+<tr><td><strong>GPU</strong></td><td>Compute (MAC operations)</td><td>80-192 GB HBM3, 1000+ TFLOPS</td><td>All matrix math for training happens here</td></tr>
+<tr><td><strong>HBM Memory</strong></td><td>GPU memory</td><td>80-192 GB per GPU, 2-4 TB/s bandwidth</td><td>Holds model weights, activations, gradients</td></tr>
+<tr><td><strong>GPU Interconnect</strong></td><td>GPU-to-GPU within node</td><td>900 GB/s bidirectional per link</td><td>Gradient synchronization, tensor parallelism</td></tr>
+<tr><td><strong>Host CPU</strong></td><td>Data loading, orchestration</td><td>64-128 cores, 512 GB-2 TB DDR5</td><td>Preprocesses data, feeds GPUs</td></tr>
+<tr><td><strong>System RAM</strong></td><td>CPU memory</td><td>512 GB - 2 TB DDR5</td><td>Dataset buffering, CPU-side processing</td></tr>
+<tr><td><strong>Network (InfiniBand)</strong></td><td>Node-to-node communication</td><td>400 Gb/s, RDMA</td><td>Multi-node distributed training</td></tr>
+<tr><td><strong>NVMe SSDs</strong></td><td>Local fast storage</td><td>4-16 TB per node, 7 GB/s</td><td>Checkpoint saving, data staging</td></tr>
+<tr><td><strong>Parallel Filesystem</strong></td><td>Shared storage</td><td>PB-scale, 100+ GB/s aggregate</td><td>Training dataset access from all nodes</td></tr>
+<tr><td><strong>Network Switches</strong></td><td>Spine-leaf fabric</td><td>400 Gb/s ports, low latency</td><td>Connects all nodes with full bisection bandwidth</td></tr>
+<tr><td><strong>Cooling</strong></td><td>Thermal management</td><td>Direct liquid cooling</td><td>GPUs generate 300-700W each, air cooling insufficient at scale</td></tr>
+<tr><td><strong>Power Distribution</strong></td><td>Electrical infrastructure</td><td>5-10 kW per node</td><td>Clean power delivery, redundancy (UPS)</td></tr>
+</table>
+</div>
+
+<div class="card" id="mod10-sw">
+<h3>10.2 Software Stack — From Hardware to Model</h3>
+
+<div class="diagram">
+  GPU Training Software Stack
+  ════════════════════════════
+
+  ┌─────────────────────────────────────────────────┐
+  │              APPLICATION LAYER                    │
+  │  Training script (Python)                         │
+  │  model.train(), optimizer.step()                  │
+  ├─────────────────────────────────────────────────┤
+  │              ML FRAMEWORK                         │
+  │  PyTorch / TensorFlow / JAX                       │
+  │  Defines model, loss, optimizer, data pipeline    │
+  ├─────────────────────────────────────────────────┤
+  │          DISTRIBUTED TRAINING LIBRARIES           │
+  │  DeepSpeed / Megatron / FSDP / Horovod           │
+  │  Model parallelism, data parallelism, ZeRO       │
+  ├─────────────────────────────────────────────────┤
+  │           GPU COMPUTE LIBRARIES                   │
+  │  cuDNN (neural net primitives)                    │
+  │  cuBLAS (matrix operations — GEMM)               │
+  │  NCCL (multi-GPU communication)                   │
+  │  cuFFT, cuSPARSE, cuRAND                         │
+  ├─────────────────────────────────────────────────┤
+  │              RUNTIME / COMPILER                   │
+  │  CUDA Runtime / ROCm / oneAPI                     │
+  │  Kernel compilation, memory management            │
+  │  Stream scheduling, async execution               │
+  ├─────────────────────────────────────────────────┤
+  │               GPU DRIVER                          │
+  │  Kernel-mode driver                               │
+  │  GPU context management, memory mapping           │
+  │  PCIe / NVLink communication                      │
+  ├─────────────────────────────────────────────────┤
+  │           OPERATING SYSTEM                        │
+  │  Linux (Ubuntu / RHEL / Rocky)                    │
+  │  Kernel modules, IOMMU, huge pages               │
+  ├─────────────────────────────────────────────────┤
+  │              FIRMWARE                             │
+  │  GPU VBIOS / firmware                             │
+  │  BMC (Baseboard Management Controller)            │
+  │  NIC firmware (InfiniBand / RoCE)                 │
+  ├─────────────────────────────────────────────────┤
+  │              HARDWARE                             │
+  │  GPU silicon → HBM → PCIe/NVLink → CPU → Network │
+  └─────────────────────────────────────────────────┘</div>
+
+<h4>Software Dependencies — Detailed:</h4>
+
+<table>
+<tr><th>Layer</th><th>Software</th><th>Function</th><th>Depends On</th></tr>
+<tr><td><strong>Framework</strong></td><td>PyTorch</td><td>Model definition, autograd, training loop</td><td>Python, CUDA, cuDNN, NCCL</td></tr>
+<tr><td><strong>Framework</strong></td><td>TensorFlow</td><td>Graph-based model execution</td><td>Python, CUDA, cuDNN, XLA</td></tr>
+<tr><td><strong>Framework</strong></td><td>JAX</td><td>Functional transformations, JIT compilation</td><td>Python, XLA, CUDA</td></tr>
+<tr><td><strong>Distributed</strong></td><td>DeepSpeed</td><td>ZeRO optimizer, pipeline parallelism</td><td>PyTorch, NCCL, MPI</td></tr>
+<tr><td><strong>Distributed</strong></td><td>Megatron-LM</td><td>Tensor + pipeline parallelism for LLMs</td><td>PyTorch, NCCL, CUDA</td></tr>
+<tr><td><strong>Math Library</strong></td><td>cuBLAS</td><td>GEMM (General Matrix Multiply) — the MAC workhorse</td><td>CUDA Runtime, GPU Driver</td></tr>
+<tr><td><strong>DNN Library</strong></td><td>cuDNN</td><td>Convolution, attention, pooling, normalization</td><td>cuBLAS, CUDA Runtime</td></tr>
+<tr><td><strong>Communication</strong></td><td>NCCL</td><td>All-reduce, broadcast across GPUs</td><td>GPU Driver, NVLink/PCIe/InfiniBand</td></tr>
+<tr><td><strong>Runtime</strong></td><td>CUDA Toolkit</td><td>Kernel launch, memory management, streams</td><td>GPU Driver, Linux kernel</td></tr>
+<tr><td><strong>Driver</strong></td><td>GPU Kernel Driver</td><td>Hardware abstraction, context management</td><td>Linux kernel, GPU firmware</td></tr>
+<tr><td><strong>Networking</strong></td><td>MPI / RDMA</td><td>Inter-node communication</td><td>InfiniBand driver, OS kernel</td></tr>
+<tr><td><strong>Container</strong></td><td>Docker + GPU Runtime</td><td>Reproducible environment packaging</td><td>OS, GPU Driver (must match)</td></tr>
+<tr><td><strong>Orchestration</strong></td><td>Kubernetes + GPU plugin</td><td>Cluster scheduling, multi-job management</td><td>Docker, network fabric, storage</td></tr>
+</table>
+
+<div class="highlight">
+<strong>Key Dependency Chain:</strong> Training script → PyTorch → cuDNN → cuBLAS → CUDA Runtime → GPU Driver → GPU Firmware → <strong>GPU Silicon (MAC units)</strong>. Every layer must be version-compatible. A driver mismatch or cuDNN version conflict can prevent training entirely.
+</div>
+</div>
+
+<div class="card" id="mod10-topology">
+<h3>10.3 Multi-GPU Training Topologies</h3>
+
+<div class="diagram">
+  Data Parallelism vs Model Parallelism vs Pipeline Parallelism
+  ══════════════════════════════════════════════════════════════
+
+  DATA PARALLELISM (most common):
+  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐
+  │  GPU 0  │ │  GPU 1  │ │  GPU 2  │ │  GPU 3  │
+  │ Full    │ │ Full    │ │ Full    │ │ Full    │
+  │ Model   │ │ Model   │ │ Model   │ │ Model   │
+  │ Copy    │ │ Copy    │ │ Copy    │ │ Copy    │
+  │         │ │         │ │         │ │         │
+  │ Batch/4 │ │ Batch/4 │ │ Batch/4 │ │ Batch/4 │
+  └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘
+       │          │          │          │
+       └──────────┴──────────┴──────────┘
+                All-Reduce gradients
+                (via NCCL over NVLink)
+
+
+  TENSOR PARALLELISM (for large layers):
+  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐
+  │  GPU 0  │ │  GPU 1  │ │  GPU 2  │ │  GPU 3  │
+  │ Layer   │ │ Layer   │ │ Layer   │ │ Layer   │
+  │ Cols    │ │ Cols    │ │ Cols    │ │ Cols    │
+  │ [0:N/4] │ │[N/4:N/2]│ │[N/2:3N/4]│ │[3N/4:N]│
+  └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘
+       │          │          │          │
+       └──────────┴──────────┴──────────┘
+            All-Reduce partial results
+
+
+  PIPELINE PARALLELISM (for deep models):
+  ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐
+  │  GPU 0  │──▶│  GPU 1  │──▶│  GPU 2  │──▶│  GPU 3  │
+  │ Layers  │   │ Layers  │   │ Layers  │   │ Layers  │
+  │  1-10   │   │  11-20  │   │  21-30  │   │  31-40  │
+  └─────────┘   └─────────┘   └─────────┘   └─────────┘
+  Micro-batches flow through stages like an assembly line</div>
+
+<h4>GPU Interconnect Topologies:</h4>
+
+<table>
+<tr><th>Topology</th><th>Bandwidth</th><th>Scope</th><th>Use Case</th></tr>
+<tr><td><strong>NVLink (within node)</strong></td><td>900 GB/s per GPU</td><td>8 GPUs in one server</td><td>Tensor parallelism, fast all-reduce</td></tr>
+<tr><td><strong>NVSwitch</strong></td><td>Full bisection</td><td>All-to-all within node</td><td>Any GPU can talk to any GPU at full speed</td></tr>
+<tr><td><strong>InfiniBand (across nodes)</strong></td><td>400 Gb/s per port</td><td>Thousands of nodes</td><td>Data parallelism gradient sync</td></tr>
+<tr><td><strong>PCIe Gen5</strong></td><td>64 GB/s per ×16</td><td>GPU ↔ CPU</td><td>Data loading, CPU-GPU transfer</td></tr>
+<tr><td><strong>RoCE v2</strong></td><td>100-400 Gb/s</td><td>Ethernet-based clusters</td><td>Lower cost alternative to InfiniBand</td></tr>
+</table>
+</div>
+
+<div class="card" id="mod10-workflow">
+<h3>10.4 End-to-End Training Workflow</h3>
+
+<div class="diagram">
+  How a Model Gets Trained — Step by Step
+  ═════════════════════════════════════════
+
+  ┌──────────────────┐
+  │ 1. PREPARE DATA  │
+  │                  │
+  │  Raw data (text, │     ┌──────────────────┐
+  │  images, etc.)   │────▶│  Tokenize /      │
+  │  stored on       │     │  Preprocess      │
+  │  parallel FS     │     │  (CPU job)       │
+  └──────────────────┘     └────────┬─────────┘
+                                    │
+                                    ▼
+  ┌──────────────────────────────────────────────┐
+  │ 2. LOAD MODEL & DISTRIBUTE                   │
+  │                                               │
+  │  Initialize model weights (random or          │
+  │  from checkpoint)                              │
+  │                                               │
+  │  Distribute across GPUs:                      │
+  │  - Data parallel: copy model to all GPUs      │
+  │  - Tensor parallel: shard layers across GPUs  │
+  │  - Pipeline parallel: assign layer groups     │
+  └──────────────────────────┬────────────────────┘
+                             │
+                             ▼
+  ┌──────────────────────────────────────────────┐
+  │ 3. TRAINING LOOP (repeat millions of times)  │
+  │                                               │
+  │  a) DataLoader fetches batch from storage     │
+  │     CPU → GPU transfer via PCIe/pinned memory │
+  │                                               │
+  │  b) FORWARD PASS                              │
+  │     Input → Layer 1 → Layer 2 → ... → Output │
+  │     Each layer: GEMM (MAC!) + activation      │
+  │     Uses: cuBLAS GEMM → Tensor Cores → MACs  │
+  │                                               │
+  │  c) LOSS COMPUTATION                          │
+  │     Compare output to ground truth             │
+  │     Compute scalar loss value                  │
+  │                                               │
+  │  d) BACKWARD PASS (backpropagation)           │
+  │     Compute gradients via chain rule           │
+  │     Each layer: another GEMM (MAC!) for grads │
+  │     Memory intensive — store activations       │
+  │                                               │
+  │  e) GRADIENT SYNC (multi-GPU)                 │
+  │     All-reduce gradients via NCCL              │
+  │     NVLink within node, InfiniBand across      │
+  │                                               │
+  │  f) OPTIMIZER STEP                            │
+  │     Update weights: W = W - lr × gradient     │
+  │     Adam/AdamW: also maintains momentum       │
+  │                                               │
+  │  g) CHECKPOINT (periodically)                 │
+  │     Save model state to NVMe/parallel FS      │
+  │     Enables restart if hardware fails          │
+  └──────────────────────────────────────────────┘
+                             │
+                             ▼
+  ┌──────────────────────────────────────────────┐
+  │ 4. EVALUATION & EXPORT                       │
+  │                                               │
+  │  Run validation dataset through model         │
+  │  Measure accuracy/perplexity/loss             │
+  │  Export final weights for inference           │
+  └──────────────────────────────────────────────┘</div>
+
+<h4>Compute Cost at Each Stage:</h4>
+
+<table>
+<tr><th>Training Step</th><th>Primary Hardware</th><th>Bottleneck</th><th>MAC Usage</th></tr>
+<tr><td><strong>Data Loading</strong></td><td>CPU + SSD + PCIe</td><td>I/O bandwidth</td><td>None</td></tr>
+<tr><td><strong>Forward Pass</strong></td><td>GPU Tensor Cores</td><td>Compute (MACs)</td><td><span class="badge badge-green">Maximum</span></td></tr>
+<tr><td><strong>Loss Computation</strong></td><td>GPU Shader Cores</td><td>Minimal</td><td>Low</td></tr>
+<tr><td><strong>Backward Pass</strong></td><td>GPU Tensor Cores</td><td>Compute + Memory</td><td><span class="badge badge-green">Maximum</span></td></tr>
+<tr><td><strong>Gradient Sync</strong></td><td>NVLink / InfiniBand</td><td>Network bandwidth</td><td>None</td></tr>
+<tr><td><strong>Optimizer Step</strong></td><td>GPU Shader Cores</td><td>Memory bandwidth</td><td>Low</td></tr>
+<tr><td><strong>Checkpointing</strong></td><td>NVMe SSDs</td><td>I/O bandwidth</td><td>None</td></tr>
+</table>
+
+<div class="highlight">
+<strong>Key Insight:</strong> The forward and backward passes are where 90%+ of GPU compute happens — and it's almost entirely <strong>matrix multiply (GEMM)</strong>, which means <strong>MAC operations</strong>. This is why GPU performance for AI is measured in MAC throughput (TFLOPS/TOPS), and why Tensor Cores (dense MAC arrays) exist.
+</div>
+
+<h4>Scale Examples:</h4>
+
+<table>
+<tr><th>Model Size</th><th>GPUs Needed</th><th>Training Time</th><th>Cost (approx)</th></tr>
+<tr><td>1B parameters</td><td>8 GPUs (1 node)</td><td>~1-3 days</td><td>$5K-$15K</td></tr>
+<tr><td>7B parameters</td><td>32 GPUs (4 nodes)</td><td>~1-2 weeks</td><td>$50K-$150K</td></tr>
+<tr><td>70B parameters</td><td>256 GPUs (32 nodes)</td><td>~1-3 months</td><td>$1M-$5M</td></tr>
+<tr><td>400B+ parameters</td><td>2000+ GPUs (250+ nodes)</td><td>~3-6 months</td><td>$10M-$100M+</td></tr>
+</table>
+</div>
+
+<p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+</section>
+
+<!-- ========== MODULE 11: Key Concepts & Q&A ========== -->
+<section id="mod11">
+<h2>11. Key Concepts & Q&A</h2>
+
+<div class="card" id="mod11-questions">
+<h3>11.1 Fundamental Questions & Answers</h3>
+
+<div class="interview-q">
+<div class="q">Q1: How does GPU latency hiding differ from CPU out-of-order execution?</div>
+<div class="a"><strong>A:</strong> CPUs hide latency by reordering instructions within a single thread (OoO execution with reservation stations, ROB). GPUs hide latency by switching between thousands of threads (warps). When one warp stalls on a memory access, the scheduler immediately issues instructions from another ready warp. This requires massive register files to hold all thread contexts simultaneously, but avoids the complex OoO hardware. The trade-off: GPUs sacrifice single-thread performance for aggregate throughput.</div>
+</div>
+
+<div class="interview-q">
+<div class="q">Q2: What happens when threads in a warp diverge at a branch?</div>
+<div class="a"><strong>A:</strong> The GPU executes both paths sequentially, masking inactive threads using predication. For example, if 20 of 32 threads take the if-path: first execute the if-path with a 20-thread active mask, then execute the else-path with a 12-thread active mask. At the reconvergence point (post-dominator), all 32 threads resume together. This wastes SIMT lanes and reduces throughput. Modern GPUs use <strong>independent thread scheduling</strong> to allow partial reconvergence before the post-dominator.</div>
+</div>
+
+<div class="interview-q">
+<div class="q">Q3: How would you design a clock gating strategy for a GPU SM?</div>
+<div class="a"><strong>A:</strong> Multi-level approach: (1) <strong>Fine-grained:</strong> gate individual ALU units when no valid instruction — use ICG cells, minimum 4-bit width threshold. (2) <strong>Medium-grained:</strong> gate entire execution sub-blocks (tensor cores, SFUs) based on instruction type decode. (3) <strong>Coarse-grained:</strong> power-gate entire SMs when no workload assigned — use retention flops for fast wake-up. (4) <strong>Data-dependent:</strong> operand isolation on multiplier inputs when not in use. Track clock gating efficiency with coverage metrics targeting &gt;70% gating in idle scenarios.</div>
+</div>
+
+<div class="interview-q">
+<div class="q">Q4: Explain memory coalescing in GPU and its RTL implications.</div>
+<div class="a"><strong>A:</strong> When 32 threads in a warp access consecutive memory addresses, the hardware merges them into a single wide memory transaction (e.g., 32×4B = 128B). The coalescing unit in the load/store pipeline compares thread addresses, detects stride patterns, and generates minimum transactions. RTL design requires: address comparison logic for 32 threads, transaction merging FSM, handling of partial coalescing when threads access non-consecutive addresses, and replay logic for bank conflicts in shared memory.</div>
+</div>
+
+<div class="interview-q">
+<div class="q">Q5: How do you approach timing closure on a GPU block at 3nm?</div>
+<div class="a"><strong>A:</strong> (1) RTL phase: limit combinational depth to &lt;12 gates, register all module outputs, use retiming-friendly structures. (2) Synthesis: multi-Vt optimization (HVT for non-critical, LVT for critical paths), aggressive clock gating for power. (3) P&R: macro placement for SRAMs near datapaths, strategic pipeline flop placement, useful skew insertion. (4) Signoff: run timing at worst-case PVT corners (SS, 0.72V, 125°C), fix setup/hold with ECO. Key GPU-specific: the register file-to-ALU path is usually the critical path — focus there first.</div>
+</div>
+
+<div class="interview-q">
+<div class="q">Q6: How is a GPU IP block integrated into an SoC?</div>
+<div class="a"><strong>A:</strong> (1) Define interface protocol (AXI4 for memory, APB for config), clock/reset requirements, power domains. (2) Provide integration wrapper with configurable parameters (number of SMs, cache sizes). (3) CDC analysis at all clock boundaries (GPU core clock, memory clock, bus clock). (4) Deliver UPF for power intent, SDC for timing constraints. (5) Provide verification IP (UVM agents, protocol checkers, integration tests). (6) Provide integration guide, known issues, and debug access via JTAG/scan.</div>
+</div>
+</div>
+
+<div class="card" id="mod11-whiteboard">
+<h3>11.2 Hands-On Design Exercises</h3>
+
+<table>
+<tr><th>Exercise</th><th>Skills Tested</th><th>Key Concepts</th></tr>
+<tr><td>Design a warp scheduler</td><td>Microarchitecture thinking, priority logic</td><td>Scoreboarding, dependency tracking</td></tr>
+<tr><td>Design a banked register file</td><td>SRAM design, conflict resolution</td><td>Bank interleaving, port arbitration</td></tr>
+<tr><td>Design a memory coalescing unit</td><td>Address comparison, transaction merging</td><td>CAM-like structures</td></tr>
+<tr><td>Debug a timing violation</td><td>Physical design understanding</td><td>Critical path analysis, fixing techniques</td></tr>
+<tr><td>Write clock gating RTL</td><td>Power awareness in coding</td><td>ICG instantiation, enable generation</td></tr>
+<tr><td>Design an AXI-to-internal bridge</td><td>Protocol knowledge, FSM design</td><td>AXI channels, outstanding transactions</td></tr>
+</table>
+</div>
+
+<p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+</section>
+
+<!-- ========== MODULE 12: Study Resources ========== -->
+<section id="mod12">
+<h2>12. Study Resources & Preparation Roadmap</h2>
+
+<div class="card">
+<h3>12.1 Recommended Study Plan (4-6 Weeks)</h3>
+
+<table>
+<tr><th>Week</th><th>Focus Area</th><th>Activities</th></tr>
+<tr><td><strong>Week 1</strong></td><td>GPU Architecture Basics</td><td>Study CUDA programming model, understand SIMT, read GPU architecture whitepapers</td></tr>
+<tr><td><strong>Week 2</strong></td><td>GPU Microarchitecture</td><td>Deep dive into SM structure, warp scheduling, register file design, memory hierarchy</td></tr>
+<tr><td><strong>Week 3</strong></td><td>RTL & PPA for GPU</td><td>Practice GPU-style RTL coding, study clock gating techniques, review timing closure at advanced nodes</td></tr>
+<tr><td><strong>Week 4</strong></td><td>Verification & FEV</td><td>Review formal verification tools (Formality, Conformal), practice SVA assertions</td></tr>
+<tr><td><strong>Week 5</strong></td><td>Integration & Protocols</td><td>Study AXI/ACE/CHI protocols, CDC techniques, power intent (UPF)</td></tr>
+<tr><td><strong>Week 6</strong></td><td>Design Exercises</td><td>Whiteboard exercises, practice explaining designs, solve design problems</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>12.2 Essential Reading</h3>
+
+<table>
+<tr><th>Resource</th><th>Type</th><th>Why Read It</th></tr>
+<tr><td><strong>GPU Architecture Whitepapers</strong> (latest generation)</td><td>Whitepaper</td><td>Official architecture details with block diagrams</td></tr>
+<tr><td><strong>"Computer Architecture: A Quantitative Approach"</strong> — Hennessy & Patterson (Ch. 4: GPU)</td><td>Textbook</td><td>Academic foundation of GPU architecture</td></tr>
+<tr><td><strong>CUDA C++ Programming Guide</strong></td><td>Documentation</td><td>Understand the software model that drives hardware decisions</td></tr>
+<tr><td><strong>"A Survey of Techniques for Architecting and Managing GPU Register File"</strong></td><td>Research Paper</td><td>Deep dive into register file design challenges</td></tr>
+<tr><td><strong>RDNA/CDNA Architecture Whitepapers</strong></td><td>Whitepaper</td><td>Alternative GPU architecture perspective</td></tr>
+<tr><td><strong>Xe Architecture Documentation</strong></td><td>Documentation</td><td>Another GPU architecture approach</td></tr>
+<tr><td><strong>Hot Chips Conference Presentations</strong></td><td>Conference Talks</td><td>Latest GPU architecture announcements and trends</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>12.3 SoC-to-GPU Skill Mapping</h3>
+
+<p>Engineers with SoC backgrounds have strong transferable foundations for GPU design:</p>
+
+<table>
+<tr><th>SoC Skill</th><th>GPU Equivalent</th><th>Relevance</th></tr>
+<tr><td>SoC RTL design</td><td>GPU IP RTL design</td><td>Complex pipelined blocks with similar structures</td></tr>
+<tr><td>UVM verification</td><td>GPU block verification</td><td>UVM methodology scales to GPU's parallel verification challenges</td></tr>
+<tr><td>NoC / interconnect</td><td>GPU chiplet interconnect</td><td>NoC fabric design directly applicable to GPU die-to-die</td></tr>
+<tr><td>AXI/ACE protocols</td><td>GPU-SoC interface</td><td>Bridges GPU IP into SoC seamlessly</td></tr>
+<tr><td>Security architecture</td><td>GPU secure boot, TEE</td><td>Security expertise is increasingly critical in GPU designs</td></tr>
+<tr><td>Customer/outsourcing</td><td>GPU IP delivery</td><td>Managing IP deliverables and customer integration</td></tr>
+<tr><td>Automotive standards</td><td>Automotive GPU compliance</td><td>Critical for automotive GPU deployments</td></tr>
+</table>
+
+<div class="highlight">
+<strong>Key Takeaway:</strong> SoC architects bring system-level thinking, security expertise, and integration skills that complement GPU-specific domain knowledge. The combination of NoC, verification, and customer-facing experience is particularly valuable in modern chiplet-based GPU architectures.
+</div>
+</div>
+
+<p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+</section>
+
+<footer>
+    Basics of GPU — From Concept to Handoff to Hardening<br>
+    A comprehensive reference for GPU architecture, design, and implementation.
+</footer>
+
+</div>
+
+<script>
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+        e.preventDefault();
+        const target = document.querySelector(a.getAttribute('href'));
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+});
+</script>
+</body>
+</html>

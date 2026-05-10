@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Growth Analyzer Report</title>
+<style>
+:root {
+    --bg: #0f172a; --surface: #1e293b; --surface2: #334155;
+    --text: #e2e8f0; --text-dim: #94a3b8; --accent: #38bdf8;
+    --green: #22c55e; --yellow: #f59e0b; --orange: #f97316; --red: #ef4444;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+.container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+header { text-align: center; padding: 40px 0 20px; }
+header h1 { font-size: 2.2rem; background: linear-gradient(135deg, var(--accent), var(--green)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+header p { color: var(--text-dim); margin-top: 8px; }
+.disclaimer-top { background: #7f1d1d55; border: 1px solid var(--red); border-radius: 8px; padding: 12px 16px; margin: 20px 0; font-size: 0.95rem; color: #fca5a5; text-align: center; }
+.disclaimer-top a { color: var(--accent); text-decoration: underline; }
+.disclaimer { background: #7f1d1d33; border: 1px solid var(--red); border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 0.9rem; color: #fca5a5; }
+.toc { background: var(--surface); border-radius: 12px; padding: 24px 32px; margin: 30px 0; }
+.toc h2 { margin-bottom: 12px; color: var(--accent); }
+.toc ul { list-style: none; }
+.toc li { padding: 4px 0; }
+.toc li.sub { padding-left: 24px; font-size: 0.92rem; }
+.toc a { color: var(--accent); text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+.bucket-section { margin: 40px 0; }
+.bucket-section h2 { font-size: 1.6rem; color: var(--accent); border-bottom: 2px solid var(--surface2); padding-bottom: 8px; margin-bottom: 20px; }
+.stock-card { background: var(--surface); border-radius: 12px; padding: 24px; margin-bottom: 24px; border: 1px solid var(--surface2); }
+.stock-card:hover { border-color: var(--accent); }
+.card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.card-header h3 { font-size: 1.3rem; }
+.card-header h3 span.ticker { color: var(--accent); }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
+.badge-green { background: #16a34a33; color: var(--green); }
+.badge-yellow { background: #ca8a0433; color: var(--yellow); }
+.badge-orange { background: #ea580c33; color: var(--orange); }
+.badge-red { background: #dc262633; color: var(--red); }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 16px 0; }
+.metric { background: var(--bg); border-radius: 8px; padding: 10px 14px; }
+.metric .label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+.metric .value { font-size: 1.1rem; font-weight: 600; margin-top: 2px; }
+.score-bar { background: var(--bg); border-radius: 6px; height: 22px; position: relative; overflow: hidden; margin: 4px 0; }
+.score-fill { height: 100%; border-radius: 6px; transition: width 0.5s; }
+.score-label { position: absolute; right: 8px; top: 1px; font-size: 0.78rem; font-weight: 600; }
+.reasons, .health, .consensus { margin: 14px 0; }
+.reasons h4, .health h4, .consensus h4 { color: var(--accent); margin-bottom: 6px; font-size: 0.95rem; }
+.reasons ul, .health ul, .consensus ul { padding-left: 20px; }
+.reasons li, .health li, .consensus li { padding: 2px 0; font-size: 0.9rem; color: var(--text-dim); }
+.consensus { background: var(--bg); border-radius: 8px; padding: 14px 18px; border: 1px solid var(--surface2); }
+.summary { font-size: 0.85rem; color: var(--text-dim); margin-top: 12px; line-height: 1.5; }
+.back-top { text-align: center; margin: 16px 0; }
+.back-top a { color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+.back-top a:hover { text-decoration: underline; }
+footer { text-align: center; padding: 40px 0 20px; color: var(--text-dim); font-size: 0.8rem; }
+@media (max-width: 600px) {
+    .metrics { grid-template-columns: 1fr 1fr; }
+    .card-header { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+    <h1>Stock Growth Analyzer</h1>
+    <p>Multi-Bagger Potential Analysis &middot; Medium-Term Growth Forecast &middot; May 09, 2026 at 12:25 PM</p>
+</header>
+
+<div class="disclaimer-top">
+    <strong>⚠ Please read the <a href="#disclaimer">Legal Disclaimer &amp; Limitation of Liability</a> at the bottom of this report before proceeding.</strong>
+</div>
+
+<nav id="toc" class="toc"><h2>Table of Contents</h2><ul><li><a href="#300pctplus-4x-Potential">300%+ (4x Potential)</a> (3 stocks)</li><li class="sub"><a href="#stock-nvda">NVDA — NVIDIA Corporation</a></li><li class="sub"><a href="#stock-pltr">PLTR — Palantir Technologies Inc.</a></li><li class="sub"><a href="#stock-fslr">FSLR — First Solar, Inc.</a></li><li><a href="#200pctplus-3x-Potential">200%+ (3x Potential)</a> (11 stocks)</li><li class="sub"><a href="#stock-celh">CELH — Celsius Holdings, Inc.</a></li><li class="sub"><a href="#stock-sofi">SOFI — SoFi Technologies, Inc.</a></li><li class="sub"><a href="#stock-avgo">AVGO — Broadcom Inc.</a></li><li class="sub"><a href="#stock-se">SE — Sea Limited</a></li><li class="sub"><a href="#stock-vrtx">VRTX — Vertex Pharmaceuticals Incorpor</a></li><li class="sub"><a href="#stock-podd">PODD — Insulet Corporation</a></li><li class="sub"><a href="#stock-dxcm">DXCM — DexCom, Inc.</a></li><li class="sub"><a href="#stock-amd">AMD — Advanced Micro Devices, Inc.</a></li><li class="sub"><a href="#stock-duol">DUOL — Duolingo, Inc.</a></li><li class="sub"><a href="#stock-ttd">TTD — The Trade Desk, Inc.</a></li><li class="sub"><a href="#stock-arm">ARM — Arm Holdings plc</a></li><li><a href="#100pctplus-2x-Potential">100%+ (2x Potential)</a> (13 stocks)</li><li class="sub"><a href="#stock-smci">SMCI — Super Micro Computer, Inc.</a></li><li class="sub"><a href="#stock-mrvl">MRVL — Marvell Technology, Inc.</a></li><li class="sub"><a href="#stock-hubs">HUBS — HubSpot, Inc.</a></li><li class="sub"><a href="#stock-axon">AXON — Axon Enterprise, Inc.</a></li><li class="sub"><a href="#stock-asml">ASML — ASML Holding N.V. - New York Re</a></li><li class="sub"><a href="#stock-afrm">AFRM — Affirm Holdings, Inc.</a></li><li class="sub"><a href="#stock-ddog">DDOG — Datadog, Inc.</a></li><li class="sub"><a href="#stock-isrg">ISRG — Intuitive Surgical, Inc.</a></li><li class="sub"><a href="#stock-shop">SHOP — Shopify Inc.</a></li><li class="sub"><a href="#stock-coin">COIN — Coinbase Global, Inc.</a></li><li class="sub"><a href="#stock-ionq">IONQ — IonQ, Inc.</a></li><li class="sub"><a href="#stock-mdb">MDB — MongoDB, Inc.</a></li><li class="sub"><a href="#stock-abnb">ABNB — Airbnb, Inc.</a></li><li><a href="#50pctplus-1.5x-Potential">50%+ (1.5x Potential)</a> (10 stocks)</li><li class="sub"><a href="#stock-meli">MELI — MercadoLibre, Inc.</a></li><li class="sub"><a href="#stock-uber">UBER — Uber Technologies, Inc.</a></li><li class="sub"><a href="#stock-tsla">TSLA — Tesla, Inc.</a></li><li class="sub"><a href="#stock-etsy">ETSY — Etsy, Inc.</a></li><li class="sub"><a href="#stock-crwd">CRWD — CrowdStrike Holdings, Inc.</a></li><li class="sub"><a href="#stock-enph">ENPH — Enphase Energy, Inc.</a></li><li class="sub"><a href="#stock-net">NET — Cloudflare, Inc.</a></li><li class="sub"><a href="#stock-sedg">SEDG — SolarEdge Technologies, Inc.</a></li><li class="sub"><a href="#stock-snow">SNOW — Snowflake Inc.</a></li><li class="sub"><a href="#stock-li">LI — Li Auto Inc.</a></li></ul></nav>
+
+<section id="300pctplus-4x-Potential" class="bucket-section"><h2>300%+ (4x Potential)</h2>
+    <div class="stock-card" id="stock-nvda">
+        <div class="card-header">
+            <h3><span class="ticker">NVDA</span> — NVIDIA Corporation</h3>
+            <div><span class="badge badge-green">Excellent</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$215.20</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$5.23T</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">19.1</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">0.68</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">24.22</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">73.2%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">71.1%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">65.0%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">7</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$96.68B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">101.5%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">2.24</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:90%;background:#22c55e"></div><span class="score-label">90/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:95%;background:#22c55e"></div><span class="score-label">95/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:92%;background:#22c55e"></div><span class="score-label">92/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Strong revenue growth (73% YoY)</li><li>Explosive earnings growth (96% YoY)</li><li>PEG ratio 0.68 suggests undervalued growth</li><li>High gross margins (71%) indicate pricing power</li><li>Strong operating margin (65%) shows efficiency</li><li>Analyst target implies 25% upside</li><li>High beta (2.24) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 3.90)</li><li>Very low debt (D/E 7%)</li><li>Outstanding return on equity (101%)</li><li>Positive free cash flow ($96.68B)</li><li>High profit margin (56%)</li><li>Net cash position ($51.14B net cash)</li><li>Efficient asset utilisation (ROA 51%)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 57</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Strong Buy</span> (Score: 1.3/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $269.17 (↑ 25.1% upside)</li><li><strong>Target Range:</strong> $140.00 — $380.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> NVIDIA Corporation operates as a data center scale AI infrastructure company. The company operates through two segments, Compute &amp; Networking, and Graphics segments. The Compute &amp; Networking segment provides data center accelerated computing and networking platforms and artificial intelligence solut…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-pltr">
+        <div class="card-header">
+            <h3><span class="ticker">PLTR</span> — Palantir Technologies Inc.</h3>
+            <div><span class="badge badge-green">Excellent</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$137.80</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$330.35B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">66.9</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">2.05</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">63.23</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">84.7%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">84.1%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">46.2%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">2</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$2.10B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">32.6%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.52</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:80%;background:#22c55e"></div><span class="score-label">80/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:95%;background:#22c55e"></div><span class="score-label">95/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:86%;background:#22c55e"></div><span class="score-label">86/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Strong revenue growth (85% YoY)</li><li>Explosive earnings growth (325% YoY)</li><li>High gross margins (84%) indicate pricing power</li><li>Strong operating margin (46%) shows efficiency</li><li>Analyst target implies 32% upside</li><li>High beta (1.52) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 6.91)</li><li>Very low debt (D/E 2%)</li><li>Outstanding return on equity (33%)</li><li>Positive free cash flow ($2.10B)</li><li>High profit margin (44%)</li><li>Net cash position ($7.81B net cash)</li><li>Efficient asset utilisation (ROA 15%)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 27</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 1.9/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $181.73 (↑ 31.9% upside)</li><li><strong>Target Range:</strong> $70.00 — $255.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Palantir Technologies Inc. builds and deploys software platforms for the intelligence community to assist in counterterrorism investigations and operations in the United States, the United Kingdom, and internationally. It provides Palantir Gotham integrates with other platforms for defense offerings…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-fslr">
+        <div class="card-header">
+            <h3><span class="ticker">FSLR</span> — First Solar, Inc.</h3>
+            <div><span class="badge badge-green">Excellent</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$219.95</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$23.63B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">9.2</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">0.58</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">4.36</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">23.6%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">41.7%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">33.1%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">6</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$1.19B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">18.4%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.56</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:70%;background:#22c55e"></div><span class="score-label">70/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:85%;background:#22c55e"></div><span class="score-label">85/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:76%;background:#22c55e"></div><span class="score-label">76/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Solid revenue growth (24% YoY)</li><li>Explosive earnings growth (65% YoY)</li><li>PEG ratio 0.58 suggests undervalued growth</li><li>Strong operating margin (33%) shows efficiency</li><li>Analyst target implies 12% upside</li><li>High beta (1.56) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 2.56)</li><li>Very low debt (D/E 6%)</li><li>Good return on equity (18%)</li><li>Positive free cash flow ($1.19B)</li><li>High profit margin (31%)</li><li>Net cash position ($1.84B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 29</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 2.1/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $246.21 (↑ 11.9% upside)</li><li><strong>Target Range:</strong> $150.00 — $313.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> First Solar, Inc., a solar technology company, provides photovoltaic (PV) solar energy solutions in the United States, France, India, Chile, and internationally. The company manufactures and sells PV solar modules with thin film semiconductor technology that provides conventional crystalline silicon…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div><p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p></section><section id="200pctplus-3x-Potential" class="bucket-section"><h2>200%+ (3x Potential)</h2>
+    <div class="stock-card" id="stock-celh">
+        <div class="card-header">
+            <h3><span class="ticker">CELH</span> — Celsius Holdings, Inc.</h3>
+            <div><span class="badge badge-yellow">Good</span> Consumer Defensive</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$32.29</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$8.25B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">15.9</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">0.32</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">2.78</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">137.7%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">50.4%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">21.9%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">22</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$323.4M</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">8.1%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">0.51</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:80%;background:#22c55e"></div><span class="score-label">80/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:65%;background:#f59e0b"></div><span class="score-label">65/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:74%;background:#22c55e"></div><span class="score-label">74/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Strong revenue growth (138% YoY)</li><li>Explosive earnings growth (127% YoY)</li><li>PEG ratio 0.32 suggests undervalued growth</li><li>Healthy gross margins (50%)</li><li>Decent operating margin (22%)</li><li>Analyst target implies 93% upside</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Good liquidity (current ratio 1.77)</li><li>Very low debt (D/E 22%)</li><li>Positive return on equity (8%)</li><li>Positive free cash flow ($0.32B)</li><li>Thin but positive margins (6%)</li><li>Debt manageable relative to cash</li><li>Efficient asset utilisation (ROA 12%)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 21</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 1.6/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $62.33 (↑ 93.0% upside)</li><li><strong>Target Range:</strong> $40.00 — $85.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Celsius Holdings, Inc. develops, processes, manufactures, markets, sells, and distributes functional energy drinks in the United States, North America, Europe, the Asia Pacific, and internationally. The company offers CELSIUS ESSENTIALS, a functional energy drink formulated with aminos; and CELSIUS …</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-sofi">
+        <div class="card-header">
+            <h3><span class="ticker">SOFI</span> — SoFi Technologies, Inc.</h3>
+            <div><span class="badge badge-yellow">Good</span> Financial Services</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$15.75</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$20.20B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">20.0</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">0.98</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">5.17</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">42.5%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">83.5%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">18.3%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">18</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$-3.99B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">6.6%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">2.13</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:90%;background:#22c55e"></div><span class="score-label">90/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:50%;background:#f59e0b"></div><span class="score-label">50/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:74%;background:#22c55e"></div><span class="score-label">74/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Strong revenue growth (42% YoY)</li><li>Explosive earnings growth (101% YoY)</li><li>PEG ratio 0.98 suggests undervalued growth</li><li>High gross margins (84%) indicate pricing power</li><li>Decent operating margin (18%)</li><li>Analyst target implies 35% upside</li><li>High beta (2.13) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Adequate liquidity (current ratio 1.12)</li><li>Very low debt (D/E 18%)</li><li>Positive return on equity (7%)</li><li>⚠ Negative free cash flow ($-3.99B)</li><li>Healthy profit margin (15%)</li><li>Net cash position ($1.65B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 20</li><li><strong>Consensus Rating:</strong> <span class="badge badge-yellow">Hold</span> (Score: 2.7/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $21.25 (↑ 34.9% upside)</li><li><strong>Target Range:</strong> $12.00 — $31.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> SoFi Technologies, Inc. provides various financial services in the United States, Latin America, Canada, and Hong Kong. The company operates through three segments: Lending, Technology Platform, and Financial Services. It offers lending and financial services and products that allows its members to …</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-avgo">
+        <div class="card-header">
+            <h3><span class="ticker">AVGO</span> — Broadcom Inc.</h3>
+            <div><span class="badge badge-yellow">Good</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$430.00</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$2.04T</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">23.7</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">0.94</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">29.82</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">29.5%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">76.7%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">44.9%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">83</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$26.91B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">33.4%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.44</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:72%;background:#22c55e"></div><span class="score-label">72/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:65%;background:#f59e0b"></div><span class="score-label">65/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:69%;background:#f59e0b"></div><span class="score-label">69/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Solid revenue growth (30% YoY)</li><li>Strong earnings growth (32% YoY)</li><li>PEG ratio 0.94 suggests undervalued growth</li><li>High gross margins (77%) indicate pricing power</li><li>Strong operating margin (45%) shows efficiency</li><li>Analyst target implies 11% upside</li><li>High beta (1.44) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Good liquidity (current ratio 1.90)</li><li>Moderate debt (D/E 83%)</li><li>Outstanding return on equity (33%)</li><li>Positive free cash flow ($26.91B)</li><li>High profit margin (37%)</li><li>Efficient asset utilisation (ROA 11%)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 42</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Strong Buy</span> (Score: 1.3/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $475.49 (↑ 10.6% upside)</li><li><strong>Target Range:</strong> $360.00 — $630.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Broadcom Inc. designs, develops, and supplies various semiconductor devices and infrastructure software solutions internationally. The company operates in two segments: Semiconductor Solutions and Infrastructure Software. The company offers networking connectivity, such as custom silicon solutions, …</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-se">
+        <div class="card-header">
+            <h3><span class="ticker">SE</span> — Sea Limited</h3>
+            <div><span class="badge badge-green">Excellent</span> Consumer Cyclical</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$86.73</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$53.12B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">17.7</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">0.60</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">2.32</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">38.4%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">44.7%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">8.2%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">27</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$4.50B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">15.2%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.57</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:65%;background:#f59e0b"></div><span class="score-label">65/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:70%;background:#22c55e"></div><span class="score-label">70/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:67%;background:#f59e0b"></div><span class="score-label">67/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Solid revenue growth (38% YoY)</li><li>Explosive earnings growth (58% YoY)</li><li>PEG ratio 0.60 suggests undervalued growth</li><li>Analyst target implies 59% upside</li><li>High beta (1.57) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Good liquidity (current ratio 1.58)</li><li>Very low debt (D/E 27%)</li><li>Good return on equity (15%)</li><li>Positive free cash flow ($4.50B)</li><li>Thin but positive margins (7%)</li><li>Net cash position ($7.20B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 28</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Strong Buy</span> (Score: 1.3/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $138.27 (↑ 59.4% upside)</li><li><strong>Target Range:</strong> $91.00 — $195.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Sea Limited, through its subsidiaries, operates as a technology company in Southeast Asia, Latin America, the rest of Asia, and internationally. The company operates through E-commerce, Digital Financial Services, and Digital Entertainment segments. It offers Garena, a digital entertainment platform…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-vrtx">
+        <div class="card-header">
+            <h3><span class="ticker">VRTX</span> — Vertex Pharmaceuticals Incorpor</h3>
+            <div><span class="badge badge-green">Excellent</span> Healthcare</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$429.82</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$109.09B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">19.9</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">1.62</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">8.93</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">7.8%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">54.4%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">38.1%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">10</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$3.19B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">24.2%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">0.30</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:50%;background:#f59e0b"></div><span class="score-label">50/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:90%;background:#22c55e"></div><span class="score-label">90/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:66%;background:#f59e0b"></div><span class="score-label">66/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Explosive earnings growth (61% YoY)</li><li>Forward P/E of 19.9 is attractive</li><li>Healthy gross margins (54%)</li><li>Strong operating margin (38%) shows efficiency</li><li>Analyst target implies 28% upside</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 3.02)</li><li>Very low debt (D/E 10%)</li><li>Good return on equity (24%)</li><li>Positive free cash flow ($3.19B)</li><li>High profit margin (36%)</li><li>Net cash position ($5.26B net cash)</li><li>Efficient asset utilisation (ROA 12%)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 28</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 1.6/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $549.50 (↑ 27.8% upside)</li><li><strong>Target Range:</strong> $330.00 — $641.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Vertex Pharmaceuticals Incorporated operates as a biotechnology company in the United States, Europe, and internationally. The company offers transformative medicines for people with serious diseases with a focus on specialty markets, such as cystic fibrosis (CF), sickle cell disease (SCD), transfus…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-podd">
+        <div class="card-header">
+            <h3><span class="ticker">PODD</span> — Insulet Corporation</h3>
+            <div><span class="badge badge-yellow">Good</span> Healthcare</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$154.16</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$10.68B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">19.1</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">1.19</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">3.68</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">33.9%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">71.0%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">16.0%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">78</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$349.9M</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">23.0%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.20</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:68%;background:#f59e0b"></div><span class="score-label">68/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:62%;background:#f59e0b"></div><span class="score-label">62/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:66%;background:#f59e0b"></div><span class="score-label">66/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Solid revenue growth (34% YoY)</li><li>Explosive earnings growth (159% YoY)</li><li>PEG ratio 1.19 is reasonable for growth</li><li>High gross margins (71%) indicate pricing power</li><li>Decent operating margin (16%)</li><li>Analyst target implies 62% upside</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 2.49)</li><li>Manageable debt (D/E 78%)</li><li>Good return on equity (23%)</li><li>Positive free cash flow ($0.35B)</li><li>Healthy profit margin (10%)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 23</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 1.5/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $250.13 (↑ 62.3% upside)</li><li><strong>Target Range:</strong> $175.00 — $360.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Insulet Corporation develops, manufactures, and sells insulin delivery systems for people with insulin-dependent diabetes in the United States and internationally. The company offers Omnipod platform products comprising Omnipod 5 automated insulin delivery system, which includes a proprietary AID al…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-dxcm">
+        <div class="card-header">
+            <h3><span class="ticker">DXCM</span> — DexCom, Inc.</h3>
+            <div><span class="badge badge-green">Excellent</span> Healthcare</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$60.61</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$23.39B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">19.8</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">1.13</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">4.85</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">15.0%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">61.5%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">21.4%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">47</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$1.08B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">35.6%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.40</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:61%;background:#f59e0b"></div><span class="score-label">61/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:72%;background:#22c55e"></div><span class="score-label">72/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:65%;background:#f59e0b"></div><span class="score-label">65/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Moderate revenue growth (15% YoY)</li><li>Explosive earnings growth (92% YoY)</li><li>PEG ratio 1.13 is reasonable for growth</li><li>Healthy gross margins (62%)</li><li>Decent operating margin (21%)</li><li>Analyst target implies 38% upside</li><li>High beta (1.40) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Good liquidity (current ratio 1.95)</li><li>Manageable debt (D/E 47%)</li><li>Outstanding return on equity (36%)</li><li>Positive free cash flow ($1.08B)</li><li>Healthy profit margin (19%)</li><li>Net cash position ($1.03B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 24</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Strong Buy</span> (Score: 1.4/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $83.54 (↑ 37.8% upside)</li><li><strong>Target Range:</strong> $65.00 — $112.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> DexCom, Inc., a medical device company, focuses on the design, development, and commercialization of continuous glucose monitoring (CGM) systems for the management of diabetes and metabolic health in the United States and internationally. The company offers Dexcom G7 and G7 15 Day, an integrated con…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-amd">
+        <div class="card-header">
+            <h3><span class="ticker">AMD</span> — Advanced Micro Devices, Inc.</h3>
+            <div><span class="badge badge-green">Excellent</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$455.19</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$742.23B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">35.3</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">1.10</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">19.82</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">37.8%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">53.1%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">14.4%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">6</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$6.74B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">8.1%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">2.40</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:58%;background:#f59e0b"></div><span class="score-label">58/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:75%;background:#22c55e"></div><span class="score-label">75/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:65%;background:#f59e0b"></div><span class="score-label">65/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Solid revenue growth (38% YoY)</li><li>Explosive earnings growth (91% YoY)</li><li>PEG ratio 1.10 is reasonable for growth</li><li>Healthy gross margins (53%)</li><li>Decent operating margin (14%)</li><li>High beta (2.40) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 2.73)</li><li>Very low debt (D/E 6%)</li><li>Positive return on equity (8%)</li><li>Positive free cash flow ($6.74B)</li><li>Healthy profit margin (13%)</li><li>Net cash position ($8.48B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 48</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Strong Buy</span> (Score: 1.5/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $445.02 (↓ 2.2% downside)</li><li><strong>Target Range:</strong> $225.00 — $625.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Advanced Micro Devices, Inc. operates as a semiconductor company internationally. It operates in three segments: Data Center, Client and Gaming, and Embedded. The company offers artificial intelligence (AI) accelerators, microprocessors, and graphics processing units (GPUs) as standalone devices or …</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-duol">
+        <div class="card-header">
+            <h3><span class="ticker">DUOL</span> — Duolingo, Inc.</h3>
+            <div><span class="badge badge-green">Excellent</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$107.99</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$5.03B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">13.6</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">N/A</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">4.58</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">26.5%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">72.7%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">15.4%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">7</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$360.4M</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">37.0%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">0.90</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:45%;background:#f59e0b"></div><span class="score-label">45/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:90%;background:#22c55e"></div><span class="score-label">90/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:63%;background:#f59e0b"></div><span class="score-label">63/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Solid revenue growth (26% YoY)</li><li>Positive earnings growth (24% YoY)</li><li>Forward P/E of 13.6 is attractive</li><li>High gross margins (73%) indicate pricing power</li><li>Decent operating margin (15%)</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 2.62)</li><li>Very low debt (D/E 7%)</li><li>Outstanding return on equity (37%)</li><li>Positive free cash flow ($0.36B)</li><li>High profit margin (38%)</li><li>Net cash position ($1.16B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 17</li><li><strong>Consensus Rating:</strong> <span class="badge badge-yellow">Hold</span> (Score: 2.8/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $104.25 (↓ 3.5% downside)</li><li><strong>Target Range:</strong> $81.00 — $145.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Duolingo, Inc. operates as a mobile learning platform in the United States, the United Kingdom, and internationally. The company offers 250 language courses, including Spanish, English, French, German, Italian, Portuguese, Japanese, and Chinese through its Duolingo app. It also provides a digital En…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-ttd">
+        <div class="card-header">
+            <h3><span class="ticker">TTD</span> — The Trade Desk, Inc.</h3>
+            <div><span class="badge badge-green">Excellent</span> Communication Services</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$23.08</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$10.85B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">10.5</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">0.89</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">3.75</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">14.3%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">78.6%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">30.3%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">18</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$783.0M</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">16.3%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.10</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:53%;background:#f59e0b"></div><span class="score-label">53/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:75%;background:#22c55e"></div><span class="score-label">75/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:62%;background:#f59e0b"></div><span class="score-label">62/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Moderate revenue growth (14% YoY)</li><li>Positive earnings growth (8% YoY)</li><li>PEG ratio 0.89 suggests undervalued growth</li><li>High gross margins (79%) indicate pricing power</li><li>Strong operating margin (30%) shows efficiency</li><li>Analyst target implies 18% upside</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Good liquidity (current ratio 1.61)</li><li>Very low debt (D/E 18%)</li><li>Good return on equity (16%)</li><li>Positive free cash flow ($0.78B)</li><li>Healthy profit margin (15%)</li><li>Net cash position ($0.87B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 33</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 2.2/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $27.24 (↑ 18.0% upside)</li><li><strong>Target Range:</strong> $17.00 — $47.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> The Trade Desk, Inc. operates as a technology company in the United States and internationally. The company creates, manages, and optimizes digital advertising campaigns across ad formats, channels and devices, including CTV and other video, display, audio, and native, on a multitude of devices, suc…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-arm">
+        <div class="card-header">
+            <h3><span class="ticker">ARM</span> — Arm Holdings plc</h3>
+            <div><span class="badge badge-green">Excellent</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$213.27</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$226.92B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">71.0</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">2.39</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">48.58</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">20.1%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">97.5%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">29.6%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">5</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$158.0M</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">11.3%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">3.41</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:52%;background:#f59e0b"></div><span class="score-label">52/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:75%;background:#22c55e"></div><span class="score-label">75/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:61%;background:#f59e0b"></div><span class="score-label">61/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Solid revenue growth (20% YoY)</li><li>Strong earnings growth (46% YoY)</li><li>High gross margins (97%) indicate pricing power</li><li>Strong operating margin (30%) shows efficiency</li><li>High beta (3.41) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 5.43)</li><li>Very low debt (D/E 5%)</li><li>Positive return on equity (11%)</li><li>Positive free cash flow ($0.16B)</li><li>Healthy profit margin (17%)</li><li>Net cash position ($3.17B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 36</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 1.9/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $222.17 (↑ 4.2% upside)</li><li><strong>Target Range:</strong> $95.00 — $326.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Arm Holdings plc architects, develops, and licenses central processing unit products and related technologies for semiconductor companies and original equipment manufacturers. The company is involved in the licensing, marketing, research, and development of microprocessors, systems intellectual prop…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div><p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p></section><section id="100pctplus-2x-Potential" class="bucket-section"><h2>100%+ (2x Potential)</h2>
+    <div class="stock-card" id="stock-smci">
+        <div class="card-header">
+            <h3><span class="ticker">SMCI</span> — Super Micro Computer, Inc.</h3>
+            <div><span class="badge badge-yellow">Good</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$35.37</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$21.24B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">11.0</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">0.91</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">0.63</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">122.7%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">8.4%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">6.1%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">121</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$1.53B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">17.9%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.68</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:65%;background:#f59e0b"></div><span class="score-label">65/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:50%;background:#f59e0b"></div><span class="score-label">50/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:59%;background:#f59e0b"></div><span class="score-label">59/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Strong revenue growth (123% YoY)</li><li>Explosive earnings growth (326% YoY)</li><li>PEG ratio 0.91 suggests undervalued growth</li><li>High beta (1.68) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 2.65)</li><li>Moderate debt (D/E 121%)</li><li>Good return on equity (18%)</li><li>Positive free cash flow ($1.53B)</li><li>Thin but positive margins (4%)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 16</li><li><strong>Consensus Rating:</strong> <span class="badge badge-yellow">Hold</span> (Score: 2.8/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $36.75 (↑ 3.9% upside)</li><li><strong>Target Range:</strong> $15.00 — $58.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Super Micro Computer, Inc., together with its subsidiaries, develops and sells server and storage solutions based on modular and open-standard architecture in the United States, Asia, Europe, and internationally. The company provides liquid and air-cooled AI servers for training and inferencing with…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-mrvl">
+        <div class="card-header">
+            <h3><span class="ticker">MRVL</span> — Marvell Technology, Inc.</h3>
+            <div><span class="badge badge-green">Excellent</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$170.13</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$148.77B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">31.3</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">2.00</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">18.15</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">22.1%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">51.0%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">18.7%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">33</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$1.39B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">19.3%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">2.25</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:50%;background:#f59e0b"></div><span class="score-label">50/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:72%;background:#22c55e"></div><span class="score-label">72/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:59%;background:#f59e0b"></div><span class="score-label">59/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Solid revenue growth (22% YoY)</li><li>Explosive earnings growth (106% YoY)</li><li>Healthy gross margins (51%)</li><li>Decent operating margin (19%)</li><li>High beta (2.25) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 2.01)</li><li>Manageable debt (D/E 33%)</li><li>Good return on equity (19%)</li><li>Positive free cash flow ($1.39B)</li><li>High profit margin (33%)</li><li>Debt manageable relative to cash</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 39</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Strong Buy</span> (Score: 1.5/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $130.28 (↓ 23.4% downside)</li><li><strong>Target Range:</strong> $85.00 — $195.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Marvell Technology, Inc., together with its subsidiaries, provides data infrastructure semiconductor solutions and spanning the data center core to network edge in the United States, Argentina, China, India, Israel, Japan, Singapore, South Korea, Taiwan, Vietnam, and internationally. The company dev…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-hubs">
+        <div class="card-header">
+            <h3><span class="ticker">HUBS</span> — HubSpot, Inc.</h3>
+            <div><span class="badge badge-yellow">Good</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$197.34</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$10.11B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">12.7</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">0.32</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">3.06</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">23.4%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">83.7%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">3.3%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">12</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$576.7M</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">5.0%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">N/A</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:50%;background:#f59e0b"></div><span class="score-label">50/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:65%;background:#f59e0b"></div><span class="score-label">65/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:56%;background:#f59e0b"></div><span class="score-label">56/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Solid revenue growth (23% YoY)</li><li>PEG ratio 0.32 suggests undervalued growth</li><li>High gross margins (84%) indicate pricing power</li><li>Analyst target implies 54% upside</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Good liquidity (current ratio 1.61)</li><li>Very low debt (D/E 12%)</li><li>Positive return on equity (5%)</li><li>Positive free cash flow ($0.58B)</li><li>Thin but positive margins (3%)</li><li>Net cash position ($1.44B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 34</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 1.6/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $304.25 (↑ 54.2% upside)</li><li><strong>Target Range:</strong> $180.00 — $625.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> HubSpot, Inc., together with its subsidiaries, provides a cloud-based customer relationship management (CRM) platform for businesses in the Americas, Europe, and the Asia Pacific. The company&#x27;s CRM platform includes Marketing Hub, a toolset for marketing automation and email, social media, SEO, AEO,…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-axon">
+        <div class="card-header">
+            <h3><span class="ticker">AXON</span> — Axon Enterprise, Inc.</h3>
+            <div><span class="badge badge-yellow">Good</span> Industrials</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$403.54</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$32.53B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">38.6</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">1.64</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">10.90</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">33.7%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">59.5%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">3.7%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">52</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$75.1M</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">6.8%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.44</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:55%;background:#f59e0b"></div><span class="score-label">55/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:52%;background:#f59e0b"></div><span class="score-label">52/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:54%;background:#f59e0b"></div><span class="score-label">54/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Solid revenue growth (34% YoY)</li><li>Explosive earnings growth (90% YoY)</li><li>Healthy gross margins (59%)</li><li>Analyst target implies 64% upside</li><li>High beta (1.44) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 2.27)</li><li>Manageable debt (D/E 52%)</li><li>Positive return on equity (7%)</li><li>Positive free cash flow ($0.08B)</li><li>Thin but positive margins (7%)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 18</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 1.6/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $662.04 (↑ 64.1% upside)</li><li><strong>Target Range:</strong> $409.68 — $825.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Axon Enterprise, Inc. provides public safety technology solutions in the United States and internationally. The company operates in two segments, Software and Services, and Connected Devices. The Software and Services segment develops, manufactures, and sells cloud-based software-as-a-service soluti…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-asml">
+        <div class="card-header">
+            <h3><span class="ticker">ASML</span> — ASML Holding N.V. - New York Re</h3>
+            <div><span class="badge badge-green">Excellent</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$1,592.02</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$613.59B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">33.2</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">2.36</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">18.21</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">13.2%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">52.6%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">36.0%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">13</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$11.03B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">52.2%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.37</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:33%;background:#ef4444"></div><span class="score-label">33/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:85%;background:#22c55e"></div><span class="score-label">85/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:54%;background:#f59e0b"></div><span class="score-label">54/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Moderate revenue growth (13% YoY)</li><li>Positive earnings growth (19% YoY)</li><li>Healthy gross margins (53%)</li><li>Strong operating margin (36%) shows efficiency</li><li>High beta (1.37) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Adequate liquidity (current ratio 1.36)</li><li>Very low debt (D/E 13%)</li><li>Outstanding return on equity (52%)</li><li>Positive free cash flow ($11.03B)</li><li>High profit margin (30%)</li><li>Net cash position ($5.67B net cash)</li><li>Efficient asset utilisation (ROA 16%)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 15</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Strong Buy</span> (Score: 1.5/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $1,680.00 (↑ 5.5% upside)</li><li><strong>Target Range:</strong> $912.10 — $2,025.43</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> ASML Holding N.V. provides lithography solutions for the development, production, marketing, sales, upgrading, and servicing of advanced semiconductor equipment systems. The company offers lithography, metrology, and inspection systems. It also provides extreme ultraviolet lithography systems; and d…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-afrm">
+        <div class="card-header">
+            <h3><span class="ticker">AFRM</span> — Affirm Holdings, Inc.</h3>
+            <div><span class="badge badge-orange">Fair</span> Financial Services</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$64.01</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$21.44B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">16.5</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">0.77</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">5.40</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">32.6%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">48.4%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">8.5%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">240</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$601.7M</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">11.5%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">3.72</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:60%;background:#f59e0b"></div><span class="score-label">60/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:40%;background:#ef4444"></div><span class="score-label">40/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:52%;background:#f59e0b"></div><span class="score-label">52/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Solid revenue growth (33% YoY)</li><li>Explosive earnings growth (3529% YoY)</li><li>PEG ratio 0.77 suggests undervalued growth</li><li>Analyst target implies 28% upside</li><li>High beta (3.72) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 13.54)</li><li>⚠ High debt load (D/E 240%)</li><li>Positive return on equity (11%)</li><li>Positive free cash flow ($0.60B)</li><li>Thin but positive margins (10%)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 27</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 1.6/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $81.71 (↑ 27.6% upside)</li><li><strong>Target Range:</strong> $53.00 — $100.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Affirm Holdings, Inc. operates payment network in the United States, Canada, and internationally. Its platform includes point-of-sale payment solution for consumers, merchant commerce solutions, and a consumer-focused app. The company&#x27;s commerce platform, agreements with originating banks, and capit…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-ddog">
+        <div class="card-header">
+            <h3><span class="ticker">DDOG</span> — Datadog, Inc.</h3>
+            <div><span class="badge badge-yellow">Good</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$200.16</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$71.25B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">70.8</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">1.50</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">19.40</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">32.2%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">79.9%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">0.8%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">32</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$914.7M</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">3.9%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.29</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:45%;background:#f59e0b"></div><span class="score-label">45/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:62%;background:#f59e0b"></div><span class="score-label">62/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:52%;background:#f59e0b"></div><span class="score-label">52/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Solid revenue growth (32% YoY)</li><li>Explosive earnings growth (113% YoY)</li><li>High gross margins (80%) indicate pricing power</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 3.40)</li><li>Manageable debt (D/E 32%)</li><li>Positive return on equity (4%)</li><li>Positive free cash flow ($0.91B)</li><li>Thin but positive margins (4%)</li><li>Net cash position ($3.47B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 47</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Strong Buy</span> (Score: 1.4/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $213.51 (↑ 6.7% upside)</li><li><strong>Target Range:</strong> $121.00 — $320.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Datadog, Inc. operates an observability and security platform for cloud applications in the United States and internationally. The company&#x27;s products comprise infrastructure and application performance monitoring, log management, observability pipelines, synthetics, real user monitoring, product ana…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-isrg">
+        <div class="card-header">
+            <h3><span class="ticker">ISRG</span> — Intuitive Surgical, Inc.</h3>
+            <div><span class="badge badge-yellow">Good</span> Healthcare</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$450.06</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$159.39B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">38.2</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">2.36</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">15.06</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">23.0%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">66.3%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">30.9%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">N/A</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$2.49B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">17.2%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.51</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:45%;background:#f59e0b"></div><span class="score-label">45/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:60%;background:#f59e0b"></div><span class="score-label">60/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:51%;background:#f59e0b"></div><span class="score-label">51/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Solid revenue growth (23% YoY)</li><li>Positive earnings growth (19% YoY)</li><li>Healthy gross margins (66%)</li><li>Strong operating margin (31%) shows efficiency</li><li>Analyst target implies 28% upside</li><li>High beta (1.51) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 4.61)</li><li>Good return on equity (17%)</li><li>Positive free cash flow ($2.49B)</li><li>High profit margin (28%)</li><li>Efficient asset utilisation (ROA 10%)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 30</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 1.9/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $577.01 (↑ 28.2% upside)</li><li><strong>Target Range:</strong> $378.00 — $750.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Intuitive Surgical, Inc. develops, manufactures, and markets products that enable physicians and healthcare providers to enhance the quality of and access to minimally invasive care in the United States and internationally. It offers the da Vinci Surgical System that enables surgical procedures usin…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-shop">
+        <div class="card-header">
+            <h3><span class="ticker">SHOP</span> — Shopify Inc.</h3>
+            <div><span class="badge badge-green">Excellent</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$110.41</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$143.27B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">47.5</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">2.41</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">11.59</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">34.3%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">48.0%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">15.7%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">1</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$2.01B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">11.3%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">2.64</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:35%;background:#ef4444"></div><span class="score-label">35/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:75%;background:#22c55e"></div><span class="score-label">75/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:51%;background:#f59e0b"></div><span class="score-label">51/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Solid revenue growth (34% YoY)</li><li>Decent operating margin (16%)</li><li>Analyst target implies 39% upside</li><li>High beta (2.64) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 6.20)</li><li>Very low debt (D/E 1%)</li><li>Positive return on equity (11%)</li><li>Positive free cash flow ($2.01B)</li><li>Healthy profit margin (11%)</li><li>Net cash position ($5.56B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 45</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 1.7/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $153.42 (↑ 39.0% upside)</li><li><strong>Target Range:</strong> $105.00 — $200.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Shopify Inc., a commerce technology company, provides tools to start, scale, market, and run a business of various sizes in Canada, the United States, Europe, the Middle East, Africa, the Asia Pacific, and Latin America. The Company offers Shopify platform that enables merchants to manage products a…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-coin">
+        <div class="card-header">
+            <h3><span class="ticker">COIN</span> — Coinbase Global, Inc.</h3>
+            <div><span class="badge badge-yellow">Good</span> Financial Services</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$201.16</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$53.00B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">42.9</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">0.77</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">7.70</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">-22.2%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">85.2%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">11.3%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">53</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$2.43B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">10.1%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">3.38</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:40%;background:#ef4444"></div><span class="score-label">40/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:67%;background:#f59e0b"></div><span class="score-label">67/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:51%;background:#f59e0b"></div><span class="score-label">51/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>PEG ratio 0.77 suggests undervalued growth</li><li>High gross margins (85%) indicate pricing power</li><li>Decent operating margin (11%)</li><li>Analyst target implies 15% upside</li><li>High beta (3.38) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 2.34)</li><li>Manageable debt (D/E 53%)</li><li>Positive return on equity (10%)</li><li>Positive free cash flow ($2.43B)</li><li>Healthy profit margin (18%)</li><li>Net cash position ($3.74B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 28</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 2.0/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $231.29 (↑ 15.0% upside)</li><li><strong>Target Range:</strong> $107.00 — $400.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Coinbase Global, Inc. operates platform for crypto assets in the United States and internationally. It provides the primary financial account in the crypto economy for consumers; a brokerage platform with a pool of liquidity across the crypto marketplace for institutions; and a suite of products gra…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-ionq">
+        <div class="card-header">
+            <h3><span class="ticker">IONQ</span> — IonQ, Inc.</h3>
+            <div><span class="badge badge-yellow">Good</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$49.24</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$18.38B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">-54.9</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">N/A</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">98.23</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">754.7%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">35.7%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">-419.8%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">1</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$-299.6M</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">11.3%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">3.05</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:40%;background:#ef4444"></div><span class="score-label">40/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:65%;background:#f59e0b"></div><span class="score-label">65/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:50%;background:#f59e0b"></div><span class="score-label">50/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Strong revenue growth (755% YoY)</li><li>Analyst target implies 35% upside</li><li>High beta (3.05) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 14.05)</li><li>Very low debt (D/E 1%)</li><li>Positive return on equity (11%)</li><li>⚠ Negative free cash flow ($-0.30B)</li><li>High profit margin (175%)</li><li>Net cash position ($2.00B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 14</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Strong Buy</span> (Score: 1.5/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $66.38 (↑ 34.8% upside)</li><li><strong>Target Range:</strong> $44.78 — $100.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> IonQ, Inc. develops quantum computing systems in the United States, Switzerland, and Internationally. It sells access to quantum computers of various qubit capacities. The company also makes access to its quantum computers through cloud platforms, such as Amazon Web Services (AWS), Braket, Microsoft…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-mdb">
+        <div class="card-header">
+            <h3><span class="ticker">MDB</span> — MongoDB, Inc.</h3>
+            <div><span class="badge badge-yellow">Good</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$299.47</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$24.07B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">42.5</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">1.67</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">9.77</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">26.7%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">71.7%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">0.0%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">2</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$500.2M</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">-2.5%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.49</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:40%;background:#ef4444"></div><span class="score-label">40/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:60%;background:#f59e0b"></div><span class="score-label">60/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:48%;background:#f59e0b"></div><span class="score-label">48/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Solid revenue growth (27% YoY)</li><li>Positive earnings growth (2% YoY)</li><li>High gross margins (72%) indicate pricing power</li><li>Analyst target implies 16% upside</li><li>High beta (1.49) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 4.65)</li><li>Very low debt (D/E 2%)</li><li>⚠ Negative ROE (-2%)</li><li>Positive free cash flow ($0.50B)</li><li>⚠ Negative profit margin (-3%)</li><li>Net cash position ($2.32B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 36</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 1.6/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $347.10 (↑ 15.9% upside)</li><li><strong>Target Range:</strong> $250.00 — $495.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> MongoDB, Inc., together with its subsidiaries, provides general purpose database platform worldwide. The company offers MongoDB Atlas, a hosted multi-cloud database-as-a-service solution; MongoDB Enterprise Advanced, a commercial database server for enterprise customers to run in the cloud, on-premi…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-abnb">
+        <div class="card-header">
+            <h3><span class="ticker">ABNB</span> — Airbnb, Inc.</h3>
+            <div><span class="badge badge-green">Excellent</span> Consumer Cyclical</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$141.49</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$84.12B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">23.7</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">1.34</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">6.87</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">12.0%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">83.0%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">9.7%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">28</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$4.65B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">30.2%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.21</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:26%;background:#ef4444"></div><span class="score-label">26/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:80%;background:#22c55e"></div><span class="score-label">80/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:48%;background:#f59e0b"></div><span class="score-label">48/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Moderate revenue growth (12% YoY)</li><li>PEG ratio 1.34 is reasonable for growth</li><li>High gross margins (83%) indicate pricing power</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Adequate liquidity (current ratio 1.38)</li><li>Very low debt (D/E 28%)</li><li>Outstanding return on equity (30%)</li><li>Positive free cash flow ($4.65B)</li><li>High profit margin (21%)</li><li>Net cash position ($8.74B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 36</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 2.1/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $154.10 (↑ 8.9% upside)</li><li><strong>Target Range:</strong> $110.00 — $181.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Airbnb, Inc., together with its subsidiaries, operates a platform for stays, experiences, and services worldwide. The company&#x27;s marketplace connects hosts and guests online or through mobile devices to book spaces, experiences, and services. It also offers gift cards. The company was formerly known …</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div><p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p></section><section id="50pctplus-1.5x-Potential" class="bucket-section"><h2>50%+ (1.5x Potential)</h2>
+    <div class="stock-card" id="stock-meli">
+        <div class="card-header">
+            <h3><span class="ticker">MELI</span> — MercadoLibre, Inc.</h3>
+            <div><span class="badge badge-orange">Fair</span> Consumer Cyclical</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$1,632.52</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$82.76B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">25.1</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">1.01</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">2.60</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">49.0%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">49.5%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">6.9%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">170</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$10.77B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">31.3%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.41</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:48%;background:#f59e0b"></div><span class="score-label">48/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:40%;background:#ef4444"></div><span class="score-label">40/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:45%;background:#ef4444"></div><span class="score-label">45/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Strong revenue growth (49% YoY)</li><li>PEG ratio 1.01 is reasonable for growth</li><li>Analyst target implies 45% upside</li><li>High beta (1.41) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Adequate liquidity (current ratio 1.16)</li><li>⚠ High debt load (D/E 170%)</li><li>Outstanding return on equity (31%)</li><li>Positive free cash flow ($10.77B)</li><li>Thin but positive margins (6%)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 25</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Strong Buy</span> (Score: 1.5/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $2,359.88 (↑ 44.6% upside)</li><li><strong>Target Range:</strong> $1,800.00 — $3,500.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> MercadoLibre, Inc. operates online commerce platforms in Brazil, Mexico, Argentina, and internationally. The company operates Mercado Libre Marketplace, an online commerce platform that can be accessed through mobile app or website; and Mercado Pago, a financial technology solution platform, which o…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-uber">
+        <div class="card-header">
+            <h3><span class="ticker">UBER</span> — Uber Technologies, Inc.</h3>
+            <div><span class="badge badge-yellow">Good</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$75.45</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$153.59B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">17.4</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">4.51</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">2.86</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">14.5%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">39.6%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">14.6%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">48</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$9.76B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">35.3%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.16</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:33%;background:#ef4444"></div><span class="score-label">33/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:57%;background:#f59e0b"></div><span class="score-label">57/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:43%;background:#ef4444"></div><span class="score-label">43/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Moderate revenue growth (14% YoY)</li><li>Forward P/E of 17.4 is attractive</li><li>Decent operating margin (15%)</li><li>Analyst target implies 39% upside</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Adequate liquidity (current ratio 1.07)</li><li>Manageable debt (D/E 48%)</li><li>Outstanding return on equity (35%)</li><li>Positive free cash flow ($9.76B)</li><li>Healthy profit margin (16%)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 51</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 1.5/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $105.01 (↑ 39.2% upside)</li><li><strong>Target Range:</strong> $70.00 — $150.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Uber Technologies, Inc. develops and operates proprietary technology applications in the United States, Canada, Latin America, Europe, the Middle East, Africa, and the Asia Pacific. The company operates through three segments: Mobility, Delivery, and Freight. The Mobility segment connects consumers …</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-tsla">
+        <div class="card-header">
+            <h3><span class="ticker">TSLA</span> — Tesla, Inc.</h3>
+            <div><span class="badge badge-green">Excellent</span> Consumer Cyclical</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$428.35</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$1.61T</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">169.0</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">5.90</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">16.44</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">15.8%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">19.1%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">4.2%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">19</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$6.22B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">4.9%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.79</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:18%;background:#ef4444"></div><span class="score-label">18/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:70%;background:#22c55e"></div><span class="score-label">70/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:39%;background:#ef4444"></div><span class="score-label">39/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Moderate revenue growth (16% YoY)</li><li>Positive earnings growth (8% YoY)</li><li>High beta (1.79) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 2.04)</li><li>Very low debt (D/E 19%)</li><li>Positive return on equity (5%)</li><li>Positive free cash flow ($6.22B)</li><li>Thin but positive margins (4%)</li><li>Net cash position ($28.85B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 41</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 2.4/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $412.25 (↓ 3.8% downside)</li><li><strong>Target Range:</strong> $123.00 — $600.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Tesla, Inc. designs, develops, manufactures, leases, and sells electric vehicles, and energy generation and storage systems in the United States, China, and internationally. The company operates in two segments, Automotive; and Energy Generation and Storage. The company offers electric vehicles, as …</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-etsy">
+        <div class="card-header">
+            <h3><span class="ticker">ETSY</span> — Etsy, Inc.</h3>
+            <div><span class="badge badge-orange">Fair</span> Consumer Cyclical</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$64.38</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$6.11B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">9.8</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">0.63</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">2.10</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">3.1%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">71.6%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">19.0%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">N/A</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$638.8M</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">N/A</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.90</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:40%;background:#ef4444"></div><span class="score-label">40/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:35%;background:#ef4444"></div><span class="score-label">35/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:38%;background:#ef4444"></div><span class="score-label">38/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>PEG ratio 0.63 suggests undervalued growth</li><li>High gross margins (72%) indicate pricing power</li><li>Decent operating margin (19%)</li><li>Analyst target implies 11% upside</li><li>High beta (1.90) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Good liquidity (current ratio 1.69)</li><li>Positive free cash flow ($0.64B)</li><li>Thin but positive margins (10%)</li><li>Efficient asset utilisation (ROA 10%)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 25</li><li><strong>Consensus Rating:</strong> <span class="badge badge-yellow">Hold</span> (Score: 2.7/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $71.72 (↑ 11.4% upside)</li><li><strong>Target Range:</strong> $58.00 — $85.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Etsy, Inc., together with its subsidiaries, operates two-sided online marketplaces that connect buyers and sellers in the United States, the United Kingdom, and internationally. It operates through Etsy and Depop segments. The company operates Etsy marketplace that connects artisans with various con…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-crwd">
+        <div class="card-header">
+            <h3><span class="ticker">CRWD</span> — CrowdStrike Holdings, Inc.</h3>
+            <div><span class="badge badge-yellow">Good</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$527.77</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$134.34B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">85.6</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">4.35</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">27.92</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">23.3%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">74.8%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">1.0%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">18</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$1.24B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">-4.1%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.06</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:25%;background:#ef4444"></div><span class="score-label">25/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:55%;background:#f59e0b"></div><span class="score-label">55/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:37%;background:#ef4444"></div><span class="score-label">37/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Solid revenue growth (23% YoY)</li><li>High gross margins (75%) indicate pricing power</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Good liquidity (current ratio 1.77)</li><li>Very low debt (D/E 18%)</li><li>⚠ Negative ROE (-4%)</li><li>Positive free cash flow ($1.24B)</li><li>⚠ Negative profit margin (-3%)</li><li>Net cash position ($4.41B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 51</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 1.6/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $491.72 (↓ 6.8% downside)</li><li><strong>Target Range:</strong> $368.00 — $706.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> CrowdStrike Holdings, Inc. provides cybersecurity solutions in the United States and internationally. Its unified platform provides cloud-delivered protection of endpoints, cloud workloads, identity, and data through a software as a service (SaaS) subscription-based model. The company offers corpora…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-enph">
+        <div class="card-header">
+            <h3><span class="ticker">ENPH</span> — Enphase Energy, Inc.</h3>
+            <div><span class="badge badge-yellow">Good</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$36.45</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$4.80B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">14.9</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">0.96</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">3.43</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">-20.6%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">27.2%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">-9.1%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">56</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$95.9M</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">14.1%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.25</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:20%;background:#ef4444"></div><span class="score-label">20/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:62%;background:#f59e0b"></div><span class="score-label">62/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:37%;background:#ef4444"></div><span class="score-label">37/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>PEG ratio 0.96 suggests undervalued growth</li><li>Analyst target implies 11% upside</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 3.80)</li><li>Manageable debt (D/E 56%)</li><li>Positive return on equity (14%)</li><li>Positive free cash flow ($0.10B)</li><li>Thin but positive margins (10%)</li><li>Net cash position ($0.32B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 27</li><li><strong>Consensus Rating:</strong> <span class="badge badge-yellow">Hold</span> (Score: 2.6/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $40.38 (↑ 10.8% upside)</li><li><strong>Target Range:</strong> $27.00 — $62.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Enphase Energy, Inc., together with its subsidiaries, designs, develops, manufactures, and sells home energy solutions for the solar photovoltaic industry in the United States and internationally. The company offers semiconductor-based microinverter that converts energy at the individual solar modul…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-net">
+        <div class="card-header">
+            <h3><span class="ticker">NET</span> — Cloudflare, Inc.</h3>
+            <div><span class="badge badge-orange">Fair</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$196.13</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$69.31B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">136.0</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">2.38</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">29.76</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">33.5%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">73.3%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">-9.6%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">231</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$260.6M</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">-5.9%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.67</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:35%;background:#ef4444"></div><span class="score-label">35/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:35%;background:#ef4444"></div><span class="score-label">35/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:35%;background:#ef4444"></div><span class="score-label">35/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Solid revenue growth (34% YoY)</li><li>High gross margins (73%) indicate pricing power</li><li>Analyst target implies 19% upside</li><li>High beta (1.67) — amplified market moves</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Good liquidity (current ratio 1.96)</li><li>⚠ High debt load (D/E 231%)</li><li>⚠ Negative ROE (-6%)</li><li>Positive free cash flow ($0.26B)</li><li>⚠ Negative profit margin (-4%)</li><li>Net cash position ($0.64B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 31</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 1.9/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $233.53 (↑ 19.1% upside)</li><li><strong>Target Range:</strong> $135.00 — $300.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Cloudflare, Inc. operates as a cloud services provider that delivers a range of services to businesses worldwide. The company provides a cloud-based security solution to secure a range of combination of platforms, including public and private cloud, on-premises, software-as-a-service applications, a…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-sedg">
+        <div class="card-header">
+            <h3><span class="ticker">SEDG</span> — SolarEdge Technologies, Inc.</h3>
+            <div><span class="badge badge-orange">Fair</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$41.30</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$2.51B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">26.3</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">4.61</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">1.97</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">41.5%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">18.3%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">-15.3%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">98</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$80.8M</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">-72.5%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.18</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:25%;background:#ef4444"></div><span class="score-label">25/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:45%;background:#f59e0b"></div><span class="score-label">45/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:33%;background:#ef4444"></div><span class="score-label">33/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Strong revenue growth (42% YoY)</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Excellent liquidity (current ratio 2.02)</li><li>Moderate debt (D/E 98%)</li><li>⚠ Negative ROE (-73%)</li><li>Positive free cash flow ($0.08B)</li><li>⚠ Negative profit margin (-29%)</li><li>Net cash position ($0.14B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 21</li><li><strong>Consensus Rating:</strong> <span class="badge badge-yellow">Hold</span> (Score: 3.2/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $39.57 (↓ 4.2% downside)</li><li><strong>Target Range:</strong> $26.00 — $100.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> SolarEdge Technologies, Inc., together with its subsidiaries, operates as an energy technology company in the United States, Europe, and internationally. The company offers power optimizers and DC-to-AC inverters; Storage Solutions, such as home battery 400V and CSS-OD solution; EV chargers for resi…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-snow">
+        <div class="card-header">
+            <h3><span class="ticker">SNOW</span> — Snowflake Inc.</h3>
+            <div><span class="badge badge-orange">Fair</span> Technology</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$152.45</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$52.70B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">62.7</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">4.27</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">11.25</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">30.1%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">67.2%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">-33.2%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">142</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$1.12B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">-53.9%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">1.08</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:30%;background:#ef4444"></div><span class="score-label">30/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:35%;background:#ef4444"></div><span class="score-label">35/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:32%;background:#ef4444"></div><span class="score-label">32/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>Solid revenue growth (30% YoY)</li><li>Healthy gross margins (67%)</li><li>Analyst target implies 53% upside</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Adequate liquidity (current ratio 1.30)</li><li>Moderate debt (D/E 142%)</li><li>⚠ Negative ROE (-54%)</li><li>Positive free cash flow ($1.12B)</li><li>⚠ Negative profit margin (-28%)</li><li>Net cash position ($1.29B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 47</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Strong Buy</span> (Score: 1.4/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $232.74 (↑ 52.7% upside)</li><li><strong>Target Range:</strong> $123.64 — $500.00</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Snowflake Inc. provides a cloud-based data platform for various organizations in the United States and internationally. The company&#x27;s platform includes artificial intelligence (AI) Data Cloud, which enables customers to consolidate data into a single source of truth to drive meaningful business insi…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div>
+    <div class="stock-card" id="stock-li">
+        <div class="card-header">
+            <h3><span class="ticker">LI</span> — Li Auto Inc.</h3>
+            <div><span class="badge badge-yellow">Good</span> Consumer Cyclical</div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric"><div class="label">Price</div><div class="value">$18.00</div></div>
+            <div class="metric"><div class="label">Market Cap</div><div class="value">$18.38B</div></div>
+            <div class="metric"><div class="label">Fwd P/E</div><div class="value">19.3</div></div>
+            <div class="metric"><div class="label">PEG</div><div class="value">0.99</div></div>
+            <div class="metric"><div class="label">P/S</div><div class="value">0.16</div></div>
+            <div class="metric"><div class="label">Rev Growth</div><div class="value">-35.0%</div></div>
+            <div class="metric"><div class="label">Gross Margin</div><div class="value">18.7%</div></div>
+            <div class="metric"><div class="label">Op Margin</div><div class="value">-1.4%</div></div>
+            <div class="metric"><div class="label">D/E Ratio</div><div class="value">24</div></div>
+            <div class="metric"><div class="label">FCF</div><div class="value">$-12.82B</div></div>
+            <div class="metric"><div class="label">ROE</div><div class="value">1.6%</div></div>
+            <div class="metric"><div class="label">Beta</div><div class="value">0.62</div></div>
+        </div>
+
+        <div><strong>Growth Score:</strong> <div class="score-bar"><div class="score-fill" style="width:20%;background:#ef4444"></div><span class="score-label">20/100</span></div></div>
+        <div><strong>Financial Health:</strong> <div class="score-bar"><div class="score-fill" style="width:50%;background:#f59e0b"></div><span class="score-label">50/100</span></div></div>
+        <div><strong>Combined Score:</strong> <div class="score-bar"><div class="score-fill" style="width:32%;background:#ef4444"></div><span class="score-label">32/100</span></div></div>
+
+        <div class="reasons">
+            <h4>📈 Growth Catalysts</h4>
+            <ul><li>PEG ratio 0.99 suggests undervalued growth</li><li>Analyst target implies 18% upside</li></ul>
+        </div>
+        <div class="health">
+            <h4>🏥 Financial Health Assessment</h4>
+            <ul><li>Good liquidity (current ratio 1.81)</li><li>Very low debt (D/E 24%)</li><li>Positive return on equity (2%)</li><li>⚠ Negative free cash flow ($-12.82B)</li><li>Thin but positive margins (1%)</li><li>Net cash position ($83.21B net cash)</li></ul>
+        </div>
+
+        <div class="consensus"><h4>🏦 Wall Street Consensus</h4><ul><li><strong>Analysts Covering:</strong> 27</li><li><strong>Consensus Rating:</strong> <span class="badge badge-green">Buy</span> (Score: 2.5/5 — 1=Strong Buy, 5=Sell)</li><li><strong>Avg Price Target:</strong> $21.20 (↑ 17.8% upside)</li><li><strong>Target Range:</strong> $15.07 — $36.59</li></ul></div>
+
+        <div class='summary'><strong>About:</strong> Li Auto Inc. operates in the energy vehicle market in the People&#x27;s Republic of China. The company designs, develops, manufactures, and sells premium smart electric vehicles. Its product line comprises multi-purpose vehicles and sport utility vehicles. The company offers sales and after sales managem…</div>
+        <p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p>
+    </div><p class="back-top"><a href="#toc">↑ Back to Table of Contents</a></p></section>
+
+<section id="disclaimer">
+<div class="disclaimer">
+    <strong>⚠ LEGAL DISCLAIMER &amp; LIMITATION OF LIABILITY</strong><br><br>
+    This report is provided strictly for <em>educational and informational purposes only</em>
+    and does not constitute investment advice, financial advice, trading advice, or any other
+    form of professional advice. Nothing contained herein shall be construed as a solicitation,
+    recommendation, endorsement, or offer to buy or sell any securities or other financial
+    instruments.<br><br>
+    <strong>NO WARRANTY:</strong> The information presented is provided "as is" without warranty
+    of any kind, either express or implied, including but not limited to the implied warranties
+    of merchantability, fitness for a particular purpose, accuracy, completeness, or timeliness.
+    Past performance and current fundamentals are not indicative of and do not guarantee future
+    results. The value of investments and any income derived from them can go down as well as up,
+    and investors may lose the entire amount of their principal investment.<br><br>
+    <strong>LIMITATION OF LIABILITY:</strong> To the fullest extent permitted by applicable law,
+    Alok Singh, the author, shall not be held liable for any direct, indirect, incidental,
+    consequential, special, exemplary, or punitive damages, including but not limited to loss of
+    profits, loss of data, loss of goodwill, financial losses, or any other damages arising out
+    of or in connection with the use of, reliance upon, or inability to use the information
+    contained in this report, regardless of the cause of action or the theory of liability, even
+    if advised of the possibility of such damages.<br><br>
+    <strong>FORWARD-LOOKING STATEMENTS:</strong> The growth projections contained herein are
+    forward-looking estimates over the medium term based on publicly available financial data
+    and algorithmic scoring models. Such projections are inherently speculative and subject to
+    significant risks, uncertainties, and assumptions. Actual results may differ materially from
+    those projected.<br><br>
+    <strong>INDEPENDENT ADVICE:</strong> You are strongly advised to consult with a qualified,
+    licensed financial advisor, broker, or other professional before making any investment
+    decisions. By accessing this report, you acknowledge and agree that you do so at your own
+    risk and that Alok Singh bears no responsibility whatsoever for any investment decisions made
+    based on the information provided herein.
+</div>
+</section>
+
+<footer>
+    Data via Yahoo Finance &middot; May 09, 2026 at 12:25 PM<br>
+    Not investment advice. Do your own due diligence.
+</footer>
+</div>
+<script>
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+        e.preventDefault();
+        const target = document.querySelector(a.getAttribute('href'));
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+});
+</script>
+</body>
+</html>
